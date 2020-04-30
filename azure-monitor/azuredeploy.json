@@ -1,0 +1,1221 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "VM CPU Metric Alert Name": {
+            "defaultValue": "vmcpu_gt_1",
+            "type": "String"
+        },
+        "Test VM Name": {
+            "defaultValue": "msp-rsarg-test",
+            "type": "String"
+        },
+        "VM Scale Set Name": {
+            "defaultValue": "mspscaleset",
+            "type": "String"
+        },
+        "VM NIC Name": {
+            "defaultValue": "msp-rsarg-test576",
+            "type": "String"
+        },
+        "Monitor Diagnostics Storage Account Name": {
+            "defaultValue": "msprsargmonitordiag",
+            "type": "String"
+        },
+        "Virtual Network Name": {
+            "defaultValue": "msp-rsarg-monitor-vnet",
+            "type": "String"
+        },
+        "Log Analytics Workspace Name": {
+            "defaultValue": "msprsargloganalytics",
+            "type": "String"
+        },
+        "Log Analytics Action Group Name": {
+            "defaultValue": "MSP-RSarg-LogAnalyitcsActionGroup",
+            "type": "String"
+        },
+        "Autoscale Settings Name": {
+            "defaultValue": "MSP Auto Scale Test Settings",
+            "type": "String"
+        },
+        "Query Rule Name": {
+            "defaultValue": "Email Storage Account Logs",
+            "type": "String"
+        },
+        "External Blob Storage Account Name": {
+            "defaultValue": "/subscriptions/dd2c542a-aeaf-4cef-9ccd-e89ae5864c3f/resourceGroups/msp-rsarg-azureblob/providers/Microsoft.Storage/storageAccounts/msprsargblobstorage",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+	{
+            "type": "microsoft.insights/actionGroups",
+            "apiVersion": "2019-03-01",
+            "name": "[parameters('Log Analytics Action Group Name')]",
+            "location": "Global",
+            "properties": {
+                "groupShortName": "msplogtest",
+                "enabled": true,
+                "emailReceivers": [
+                    {
+                        "name": "ErrorLogs_-EmailAction-",
+                        "emailAddress": "rossarg@cdw.com",
+                        "useCommonAlertSchema": false
+                    }
+                ],
+                "smsReceivers": [],
+                "webhookReceivers": [],
+                "itsmReceivers": [],
+                "azureAppPushReceivers": [],
+                "automationRunbookReceivers": [],
+                "voiceReceivers": [],
+                "logicAppReceivers": [],
+                "azureFunctionReceivers": []
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2019-11-01",
+            "name": "[parameters('Virtual Network Name')]",
+            "location": "centralus",
+            "tags": {
+                "Owner": "Ross Sargent"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.1.3.0/24"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "default",
+                        "properties": {
+                            "addressPrefix": "10.1.3.0/24",
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Enabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        }
+                    }
+                ],
+                "virtualNetworkPeerings": [],
+                "enableDdosProtection": false,
+                "enableVmProtection": false
+            }
+        },
+        {
+            "type": "microsoft.operationalinsights/workspaces",
+            "apiVersion": "2015-11-01-preview",
+            "name": "[parameters('Log Analytics Workspace Name')]",
+            "location": "northcentralus",
+            "properties": {
+                "provisioningState": "Succeeded",
+                "sku": {
+                    "name": "free"
+                },
+                "retentionInDays": 7
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "name": "[parameters('Monitor Diagnostics Storage Account Name')]",
+            "location": "centralus",
+            "tags": {
+                "Owner": "Ross Sargent"
+            },
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "Storage",
+            "properties": {
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [],
+                    "ipRules": [],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                }
+            }
+        },
+                {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "apiVersion": "2019-07-01",
+            "name": "[parameters('VM Scale Set Name')]",
+            "location": "centralus",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('Virtual Network Name'), 'default')]"
+            ],
+            "sku": {
+                "name": "Standard_DS1_v2",
+                "tier": "Standard",
+                "capacity": 2
+            },
+            "properties": {
+                "singlePlacementGroup": true,
+                "upgradePolicy": {
+                    "mode": "Manual"
+                },
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "mspscales",
+                        "adminUsername": "admagent",
+                        "adminPassword": "Ruffal0theBuffal0!",
+                        "windowsConfiguration": {
+                            "provisionVMAgent": true,
+                            "enableAutomaticUpdates": true
+                        },
+                        "secrets": []
+                    },
+                    "storageProfile": {
+                        "osDisk": {
+                            "createOption": "FromImage",
+                            "caching": "ReadWrite",
+                            "managedDisk": {
+                                "storageAccountType": "Premium_LRS"
+                            },
+                            "diskSizeGB": 127
+                        },
+                        "imageReference": {
+                            "publisher": "MicrosoftWindowsServer",
+                            "offer": "WindowsServer",
+                            "sku": "2016-Datacenter",
+                            "version": "latest"
+                        }
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[concat(parameters('VM Scale Set Name'), 'Nic')]",
+                                "properties": {
+                                    "primary": true,
+                                    "enableAcceleratedNetworking": false,
+                                    "dnsSettings": {
+                                        "dnsServers": []
+                                    },
+                                    "enableIPForwarding": false,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[concat(parameters('VM Scale Set Name'), 'IpConfig')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('Virtual Network Name'), 'default')]"
+                                                },
+                                                "privateIPAddressVersion": "IPv4"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "priority": "Regular"
+                },
+                "overprovision": true,
+                "doNotRunExtensionsOnOverprovisionedVMs": false,
+                "platformFaultDomainCount": 5
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2019-11-01",
+            "name": "[parameters('VM NIC Name')]",
+            "location": "centralus",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('Virtual Network Name'), 'default')]"
+            ],
+            "tags": {
+                "Owner": "Ross Sargent"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAddress": "10.1.3.4",
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('Virtual Network Name'), 'default')]"
+                            },
+                            "primary": true,
+                            "privateIPAddressVersion": "IPv4"
+                        }
+                    }
+                ],
+                "dnsSettings": {
+                    "dnsServers": []
+                },
+                "enableAcceleratedNetworking": false,
+                "enableIPForwarding": false
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2019-11-01",
+            "name": "[concat(parameters('Virtual Network Name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('Virtual Network Name'))]"
+            ],
+            "properties": {
+                "addressPrefix": "10.1.3.0/24",
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Enabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_General|AlphabeticallySortedComputers')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "All Computers with their most recent data",
+                "Category": "General Exploration",
+                "Query": "search not(ObjectName == \"Advisor Metrics\" or ObjectName == \"ManagedSpace\") | summarize AggregatedValue = max(TimeGenerated) by Computer | limit 500000 | sort by Computer asc\r\n// Oql: NOT(ObjectName=\"Advisor Metrics\" OR ObjectName=ManagedSpace) | measure max(TimeGenerated) by Computer | top 500000 | Sort Computer // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_General|dataPointsPerManagementGroup')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Which Management Group is generating the most data points?",
+                "Category": "General Exploration",
+                "Query": "search * | summarize AggregatedValue = count() by ManagementGroupName\r\n// Oql: * | Measure count() by ManagementGroupName // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_General|dataTypeDistribution')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Distribution of data Types",
+                "Category": "General Exploration",
+                "Query": "search * | extend Type = $table | summarize AggregatedValue = count() by Type\r\n// Oql: * | Measure count() by Type // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_General|StaleComputers')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Stale Computers (data older than 24 hours)",
+                "Category": "General Exploration",
+                "Query": "search not(ObjectName == \"Advisor Metrics\" or ObjectName == \"ManagedSpace\") | summarize lastdata = max(TimeGenerated) by Computer | limit 500000 | where lastdata < ago(24h)\r\n// Oql: NOT(ObjectName=\"Advisor Metrics\" OR ObjectName=ManagedSpace) | measure max(TimeGenerated) as lastdata by Computer | top 500000 | where lastdata < NOW-24HOURS // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|AllEvents')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "All Events",
+                "Category": "Log Management",
+                "Query": "Event | sort by TimeGenerated desc\r\n// Oql: Type=Event // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|AllSyslog')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "All Syslogs",
+                "Category": "Log Management",
+                "Query": "Syslog | sort by TimeGenerated desc\r\n// Oql: Type=Syslog // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|AllSyslogByFacility')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "All Syslog Records grouped by Facility",
+                "Category": "Log Management",
+                "Query": "Syslog | summarize AggregatedValue = count() by Facility\r\n// Oql: Type=Syslog | Measure count() by Facility // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|AllSyslogByProcessName')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "All Syslog Records grouped by ProcessName",
+                "Category": "Log Management",
+                "Query": "Syslog | summarize AggregatedValue = count() by ProcessName\r\n// Oql: Type=Syslog | Measure count() by ProcessName // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|AllSyslogsWithErrors')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "All Syslog Records with Errors",
+                "Category": "Log Management",
+                "Query": "Syslog | where SeverityLevel == \"error\" | sort by TimeGenerated desc\r\n// Oql: Type=Syslog SeverityLevel=error // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|AverageHTTPRequestTimeByClientIPAddress')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Average HTTP Request time by Client IP Address",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = avg(TimeTaken) by cIP\r\n// Oql: Type=W3CIISLog | Measure Avg(TimeTaken) by cIP // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|AverageHTTPRequestTimeHTTPMethod')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Average HTTP Request time by HTTP Method",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = avg(TimeTaken) by csMethod\r\n// Oql: Type=W3CIISLog | Measure Avg(TimeTaken) by csMethod // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|CountIISLogEntriesClientIPAddress')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of IIS Log Entries by Client IP Address",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = count() by cIP\r\n// Oql: Type=W3CIISLog | Measure count() by cIP // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|CountIISLogEntriesHTTPRequestMethod')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of IIS Log Entries by HTTP Request Method",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = count() by csMethod\r\n// Oql: Type=W3CIISLog | Measure count() by csMethod // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|CountIISLogEntriesHTTPUserAgent')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of IIS Log Entries by HTTP User Agent",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = count() by csUserAgent\r\n// Oql: Type=W3CIISLog | Measure count() by csUserAgent // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|CountOfIISLogEntriesByHostRequestedByClient')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of IIS Log Entries by Host requested by client",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = count() by csHost\r\n// Oql: Type=W3CIISLog | Measure count() by csHost // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|CountOfIISLogEntriesByURLForHost')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of IIS Log Entries by URL for the host \"www.contoso.com\" (replace with your own)",
+                "Category": "Log Management",
+                "Query": "search csHost == \"www.contoso.com\" | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = count() by csUriStem\r\n// Oql: Type=W3CIISLog csHost=\"www.contoso.com\" | Measure count() by csUriStem // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|CountOfIISLogEntriesByURLRequestedByClient')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of IIS Log Entries by URL requested by client (without query strings)",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = count() by csUriStem\r\n// Oql: Type=W3CIISLog | Measure count() by csUriStem // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|CountOfWarningEvents')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of Events with level \"Warning\" grouped by Event ID",
+                "Category": "Log Management",
+                "Query": "Event | where EventLevelName == \"warning\" | summarize AggregatedValue = count() by EventID\r\n// Oql: Type=Event EventLevelName=warning | Measure count() by EventID // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|DisplayBreakdownRespondCodes')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Shows breakdown of response codes",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = count() by scStatus\r\n// Oql: Type=W3CIISLog | Measure count() by scStatus // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|EventsByEventLog')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of Events grouped by Event Log",
+                "Category": "Log Management",
+                "Query": "Event | summarize AggregatedValue = count() by EventLog\r\n// Oql: Type=Event | Measure count() by EventLog // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|EventsByEventsID')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of Events grouped by Event ID",
+                "Category": "Log Management",
+                "Query": "Event | summarize AggregatedValue = count() by EventID\r\n// Oql: Type=Event | Measure count() by EventID // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|EventsByEventSource')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of Events grouped by Event Source",
+                "Category": "Log Management",
+                "Query": "Event | summarize AggregatedValue = count() by Source\r\n// Oql: Type=Event | Measure count() by Source // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|EventsInOMBetween2000to3000')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Events in the Operations Manager Event Log whose Event ID is in the range between 2000 and 3000",
+                "Category": "Log Management",
+                "Query": "Event | where EventLog == \"Operations Manager\" and EventID >= 2000 and EventID <= 3000 | sort by TimeGenerated desc\r\n// Oql: Type=Event EventLog=\"Operations Manager\" EventID:[2000..3000] // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|EventsWithStartedinEventID')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Count of Events containing the word \"started\" grouped by EventID",
+                "Category": "Log Management",
+                "Query": "search in (Event) \"started\" | summarize AggregatedValue = count() by EventID\r\n// Oql: Type=Event \"started\" | Measure count() by EventID // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|FindMaximumTimeTakenForEachPage')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Find the maximum time taken for each page",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = max(TimeTaken) by csUriStem\r\n// Oql: Type=W3CIISLog | Measure Max(TimeTaken) by csUriStem // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|IISLogEntriesForClientIP')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "IIS Log Entries for a specific client IP Address (replace with your own)",
+                "Category": "Log Management",
+                "Query": "search cIP == \"192.168.0.1\" | extend Type = $table | where Type == W3CIISLog | sort by TimeGenerated desc | project csUriStem, scBytes, csBytes, TimeTaken, scStatus\r\n// Oql: Type=W3CIISLog cIP=\"192.168.0.1\" | Select csUriStem,scBytes,csBytes,TimeTaken,scStatus // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|ListAllIISLogEntries')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "All IIS Log Entries",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | sort by TimeGenerated desc\r\n// Oql: Type=W3CIISLog // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|NoOfConnectionsToOMSDKService')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "How many connections to Operations Manager's SDK service by day",
+                "Category": "Log Management",
+                "Query": "Event | where EventID == 26328 and EventLog == \"Operations Manager\" | summarize AggregatedValue = count() by bin(TimeGenerated, 1d) | sort by TimeGenerated desc\r\n// Oql: Type=Event EventID=26328 EventLog=\"Operations Manager\" | Measure count() interval 1DAY // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|ServerRestartTime')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "When did my servers initiate restart?",
+                "Category": "Log Management",
+                "Query": "search in (Event) \"shutdown\" and EventLog == \"System\" and Source == \"User32\" and EventID == 1074 | sort by TimeGenerated desc | project TimeGenerated, Computer\r\n// Oql: shutdown Type=Event EventLog=System Source=User32 EventID=1074 | Select TimeGenerated,Computer // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|Show404PagesList')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Shows which pages people are getting a 404 for",
+                "Category": "Log Management",
+                "Query": "search scStatus == 404 | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = count() by csUriStem\r\n// Oql: Type=W3CIISLog scStatus=404 | Measure count() by csUriStem // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|ShowServersThrowingInternalServerError')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Shows servers that are throwing internal server error",
+                "Category": "Log Management",
+                "Query": "search scStatus == 500 | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = count() by sComputerName\r\n// Oql: Type=W3CIISLog scStatus=500 | Measure count() by sComputerName // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|TotalBytesReceivedByEachAzureRoleInstance')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Total Bytes received by each Azure Role Instance",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = sum(csBytes) by RoleInstance\r\n// Oql: Type=W3CIISLog | Measure Sum(csBytes) by RoleInstance // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|TotalBytesReceivedByEachIISComputer')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Total Bytes received by each IIS Computer",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = sum(csBytes) by Computer | limit 500000\r\n// Oql: Type=W3CIISLog | Measure Sum(csBytes) by Computer | top 500000 // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|TotalBytesRespondedToClientsByClientIPAddress')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Total Bytes responded back to clients by Client IP Address",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = sum(scBytes) by cIP\r\n// Oql: Type=W3CIISLog | Measure Sum(scBytes) by cIP // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|TotalBytesRespondedToClientsByEachIISServerIPAddress')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Total Bytes responded back to clients by each IIS ServerIP Address",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = sum(scBytes) by sIP\r\n// Oql: Type=W3CIISLog | Measure Sum(scBytes) by sIP // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|TotalBytesSentByClientIPAddress')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Total Bytes sent by Client IP Address",
+                "Category": "Log Management",
+                "Query": "search * | extend Type = $table | where Type == W3CIISLog | summarize AggregatedValue = sum(csBytes) by cIP\r\n// Oql: Type=W3CIISLog | Measure Sum(csBytes) by cIP // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PEF: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|WarningEvents')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "All Events with level \"Warning\"",
+                "Category": "Log Management",
+                "Query": "Event | where EventLevelName == \"warning\" | sort by TimeGenerated desc\r\n// Oql: Type=Event EventLevelName=warning // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|WindowsFireawallPolicySettingsChanged')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "Windows Firewall Policy settings have changed",
+                "Category": "Log Management",
+                "Query": "Event | where EventLog == \"Microsoft-Windows-Windows Firewall With Advanced Security/Firewall\" and EventID == 2008 | sort by TimeGenerated desc\r\n// Oql: Type=Event EventLog=\"Microsoft-Windows-Windows Firewall With Advanced Security/Firewall\" EventID=2008 // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.OperationalInsights/workspaces/savedSearches",
+            "apiVersion": "2015-03-20",
+            "name": "[concat(parameters('Log Analytics Workspace Name'), '/LogManagement(', parameters('Log Analytics Workspace Name'), ')_LogManagement|WindowsFireawallPolicySettingsChangedByMachines')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('Log Analytics Workspace Name'))]"
+            ],
+            "properties": {
+                "DisplayName": "On which machines and how many times have Windows Firewall Policy settings changed",
+                "Category": "Log Management",
+                "Query": "Event | where EventLog == \"Microsoft-Windows-Windows Firewall With Advanced Security/Firewall\" and EventID == 2008 | summarize AggregatedValue = count() by Computer | limit 500000\r\n// Oql: Type=Event EventLog=\"Microsoft-Windows-Windows Firewall With Advanced Security/Firewall\" EventID=2008 | measure count() by Computer | top 500000 // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                "Version": 2
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('Monitor Diagnostics Storage Account Name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('Monitor Diagnostics Storage Account Name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                },
+                "deleteRetentionPolicy": {
+                    "enabled": false
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('Monitor Diagnostics Storage Account Name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('Monitor Diagnostics Storage Account Name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "properties": {
+                "cors": {
+                    "corsRules": []
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2019-07-01",
+            "name": "[parameters('Test VM Name')]",
+            "location": "centralus",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', parameters('VM NIC Name'))]",
+                "[resourceId('Microsoft.Storage/StorageAccounts', parameters('Monitor Diagnostics Storage Account Name'))]"
+            ],
+            "tags": {
+                "Owner": "Ross Sargent"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "Standard_DS1_v2"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2016-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Windows",
+                        "name": "[concat(parameters('Test VM Name'), '_OsDisk_1_9b83b71608074355a34cbbd07c63e103')]",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "Standard_LRS"
+                        },
+                        "diskSizeGB": 127
+                    },
+                    "dataDisks": []
+                },
+                "osProfile": {
+                    "computerName": "[parameters('Test VM Name')]",
+                    "adminUsername": "admagent",
+                    "adminPassword": "Ruffal0theBuffal0!",
+                    "windowsConfiguration": {
+                        "provisionVMAgent": true,
+                        "enableAutomaticUpdates": true
+                    },
+                    "secrets": [],
+                    "allowExtensionOperations": true
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', parameters('VM NIC Name'))]"
+                        }
+                    ]
+                },
+                "diagnosticsProfile": {
+                    "bootDiagnostics": {
+                        "enabled": true,
+                        "storageUri": "[concat('https://', parameters('Monitor Diagnostics Storage Account Name'), '.blob.core.windows.net/')]"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets/virtualMachines",
+            "apiVersion": "2019-07-01",
+            "name": "[concat(parameters('VM Scale Set Name'), '/1')]",
+            "location": "centralus",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('VM Scale Set Name'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('Virtual Network Name'), 'default')]"
+            ],
+            "sku": {
+                "name": "Standard_DS1_v2",
+                "tier": "Standard"
+            },
+            "properties": {
+                "networkProfileConfiguration": {
+                    "networkInterfaceConfigurations": [
+                        {
+                            "name": "mspscalesetNic",
+                            "properties": {
+                                "primary": true,
+                                "enableAcceleratedNetworking": false,
+                                "dnsSettings": {
+                                    "dnsServers": []
+                                },
+                                "enableIPForwarding": false,
+                                "ipConfigurations": [
+                                    {
+                                        "name": "mspscalesetIpConfig",
+                                        "properties": {
+                                            "subnet": {
+                                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('Virtual Network Name'), 'default')]"
+                                            },
+                                            "privateIPAddressVersion": "IPv4"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "hardwareProfile": {},
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2016-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Windows",
+                        "name": "mspscaleset_mspscaleset_1_OsDisk_1_e1fa783a664841af8579cf7adcf7318b",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "Premium_LRS"
+                        },
+                        "diskSizeGB": 127
+                    },
+                    "dataDisks": []
+                },
+                "osProfile": {
+                    "computerName": "mspscales000001",
+                    "adminUsername": "admagent",
+                    "adminPassword": "Ruffal0theBuffal0!",
+                    "windowsConfiguration": {
+                        "provisionVMAgent": true,
+                        "enableAutomaticUpdates": true
+                    },
+                    "secrets": [],
+                    "allowExtensionOperations": true
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/virtualMachines', parameters('VM Scale Set Name'), '1'), '/networkInterfaces/mspscalesetNic')]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets/virtualMachines",
+            "apiVersion": "2019-07-01",
+            "name": "[concat(parameters('VM Scale Set Name'), '/2')]",
+            "location": "centralus",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('VM Scale Set Name'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('Virtual Network Name'), 'default')]"
+            ],
+            "sku": {
+                "name": "Standard_DS1_v2",
+                "tier": "Standard"
+            },
+            "properties": {
+                "networkProfileConfiguration": {
+                    "networkInterfaceConfigurations": [
+                        {
+                            "name": "mspscalesetNic",
+                            "properties": {
+                                "primary": true,
+                                "enableAcceleratedNetworking": false,
+                                "dnsSettings": {
+                                    "dnsServers": []
+                                },
+                                "enableIPForwarding": false,
+                                "ipConfigurations": [
+                                    {
+                                        "name": "mspscalesetIpConfig",
+                                        "properties": {
+                                            "subnet": {
+                                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('Virtual Network Name'), 'default')]"
+                                            },
+                                            "privateIPAddressVersion": "IPv4"
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "hardwareProfile": {},
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "MicrosoftWindowsServer",
+                        "offer": "WindowsServer",
+                        "sku": "2016-Datacenter",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Windows",
+                        "name": "mspscaleset_mspscaleset_2_OsDisk_1_10a0986e75d74ec08b809ac66d382034",
+                        "createOption": "FromImage",
+                        "caching": "ReadWrite",
+                        "managedDisk": {
+                            "storageAccountType": "Premium_LRS"
+                        },
+                        "diskSizeGB": 127
+                    },
+                    "dataDisks": []
+                },
+                "osProfile": {
+                    "computerName": "mspscales000002",
+                    "adminUsername": "admagent",
+                    "adminPassword": "Ruffal0theBuffal0!",
+                    "windowsConfiguration": {
+                        "provisionVMAgent": true,
+                        "enableAutomaticUpdates": true
+                    },
+                    "secrets": [],
+                    "allowExtensionOperations": true
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[concat(resourceId('Microsoft.Compute/virtualMachineScaleSets/virtualMachines', parameters('VM Scale Set Name'), '2'), '/networkInterfaces/mspscalesetNic')]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "microsoft.insights/autoscalesettings",
+            "apiVersion": "2014-04-01",
+            "name": "[parameters('Autoscale Settings Name')]",
+            "location": "North Central US",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', parameters('Test VM Name'))]",
+                "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('VM Scale Set Name'))]"
+            ],
+            "properties": {
+                "profiles": [
+                    {
+                        "name": "Scale Up Profile",
+                        "capacity": {
+                            "minimum": "1",
+                            "maximum": "2",
+                            "default": "1"
+                        },
+                        "rules": [
+                            {
+                                "metricTrigger": {
+                                    "metricName": "Percentage CPU",
+                                    "metricNamespace": "",
+                                    "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachines', parameters('Test VM Name'))]",
+                                    "timeGrain": "PT1M",
+                                    "statistic": "Average",
+                                    "timeWindow": "PT5M",
+                                    "timeAggregation": "Average",
+                                    "operator": "GreaterThan",
+                                    "threshold": 3,
+                                    "dimensions": null,
+                                    "dividePerInstance": false
+                                },
+                                "scaleAction": {
+                                    "direction": "Increase",
+                                    "type": "ChangeCount",
+                                    "value": "1",
+                                    "cooldown": "PT5M"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "enabled": true,
+                "name": "[parameters('Autoscale Settings Name')]",
+                "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('VM Scale Set Name'))]"
+            }
+        },
+        {
+            "type": "Microsoft.Insights/metricAlerts",
+            "apiVersion": "2018-03-01",
+            "name": "[parameters('VM CPU Metric Alert Name')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', parameters('Test VM Name'))]",
+                "[resourceId('microsoft.insights/actionGroups', parameters('Log Analytics Action Group Name'))]"
+            ],
+            "properties": {
+                "description": "Send an email when average CPU is greater than 1% over five minutes.",
+                "severity": 3,
+                "enabled": true,
+                "scopes": [
+                    "[resourceId('Microsoft.Compute/virtualMachines', parameters('Test VM Name'))]"
+                ],
+                "evaluationFrequency": "PT5M",
+                "windowSize": "PT5M",
+                "criteria": {
+                    "allOf": [
+                        {
+                            "threshold": 1,
+                            "name": "metric1",
+                            "metricNamespace": "Microsoft.Compute/virtualMachines",
+                            "metricName": "Percentage CPU",
+                            "operator": "GreaterThan",
+                            "timeAggregation": "Average",
+                            "criterionType": "StaticThresholdCriterion"
+                        }
+                    ],
+                    "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria"
+                },
+                "targetResourceType": "microsoft.compute/virtualmachines",
+                "actions": [
+                    {
+                        "actionGroupId": "[resourceId('microsoft.insights/actionGroups', parameters('Log Analytics Action Group Name'))]"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "microsoft.insights/scheduledqueryrules",
+            "apiVersion": "2018-04-16",
+            "name": "[parameters('Query Rule Name')]",
+            "location": "northcentralus",
+            "dependsOn": [
+                "[resourceId('microsoft.operationalinsights/workspaces', parameters('Log Analytics Workspace Name'))]",
+                "[resourceId('microsoft.insights/actionGroups', parameters('Log Analytics Action Group Name'))]"
+            ],
+            "properties": {
+                "enabled": "false",
+                "source": {
+                    "query": "Event | sort by TimeGenerated desc\r\n// Oql: Type=Event // Args: {OQ: True; WorkspaceId: 00000000-0000-0000-0000-000000000000} // Settings: {PTT: True; SortI: True; SortF: True} // Version: 0.1.122",
+                    "authorizedResources": [],
+                    "dataSourceId": "[resourceId('microsoft.operationalinsights/workspaces', parameters('Log Analytics Workspace Name'))]",
+                    "queryType": "ResultCount"
+                },
+                "schedule": {
+                    "frequencyInMinutes": 15,
+                    "timeWindowInMinutes": 15
+                },
+                "action": {
+                    "severity": "3",
+                    "aznsAction": {
+                        "actionGroup": [
+                            "[resourceId('microsoft.insights/actionGroups', parameters('Log Analytics Action Group Name'))]"
+                        ],
+                        "emailSubject": "MSP RSarg Log Analytics Test"
+                    },
+                    "trigger": {
+                        "thresholdOperator": "GreaterThan",
+                        "threshold": 1000
+                    },
+                    "odata.type": "Microsoft.WindowsAzure.Management.Monitoring.Alerts.Models.Microsoft.AppInsights.Nexus.DataContracts.Resources.ScheduledQueryRules.AlertingAction"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('Monitor Diagnostics Storage Account Name'), '/default/bootdiagnostics-msprsargt-a3cd1025-2938-4952-8dec-ba1861f0b408')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('Monitor Diagnostics Storage Account Name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('Monitor Diagnostics Storage Account Name'))]"
+            ],
+            "properties": {
+                "publicAccess": "None"
+            }
+        }
+    ]
+}

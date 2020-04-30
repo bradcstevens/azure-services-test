@@ -1,0 +1,15 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "frontDoorName": {
+            "value": "FrontDoor0001"
+        },
+        "backendAddress1": {
+            "value": "appservicetm1.azurewebsites.net"
+        },
+        "backendAddress2": {
+            "value": "appservicetm2.azurewebsites.net"
+        }
+    }
+}

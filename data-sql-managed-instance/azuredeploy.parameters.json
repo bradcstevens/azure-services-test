@@ -1,0 +1,74 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "managedInstanceName": {
+            "value": "managedinstance4"
+        },
+        "location": {
+            "value": "centralus"
+        },
+        "databaseTags": {
+            "value": {
+                "Owner": ""
+            }
+        },
+        "administratorLogin": {
+            "value": ""
+        },
+        "administratorLoginPassword": {
+            "value": ""
+        },
+        "virtualNetworkResourceGroupName": {
+            "value": ""
+        },
+        "virtualNetworkName": {
+            "value": ""
+        },
+        "subnetName": {
+            "value": ""
+        },
+        "createNSG": {
+            "value": true
+        },
+        "createRT": {
+            "value": true
+        },
+        "skuName": {
+            "value": "GP_Gen5"
+        },
+        "skuEdition": {
+            "value": "GeneralPurpose"
+        },
+        "storageSizeInGB": {
+            "value": 256
+        },
+        "vCores": {
+            "value": 4
+        },
+        "licenseType": {
+            "value": "LicenseIncluded"
+        },
+        "hardwareFamily": {
+            "value": "Gen5"
+        },
+        "dnsZonePartner": {
+            "value": ""
+        },
+        "timezoneId": {
+            "value": "Central Standard Time"
+        },
+        "collation": {
+            "value": "SQL_Latin1_General_CP1_CI_AS"
+        },
+        "proxyOverride": {
+            "value": "Proxy"
+        },
+        "publicDataEndpointEnabled": {
+            "value": false
+        },
+        "nsgForPublicEndpoint": {
+            "value": "allowFromAzureCloudTo3342NSG"
+        }
+    }
+}

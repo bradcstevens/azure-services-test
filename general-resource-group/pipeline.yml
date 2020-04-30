@@ -1,0 +1,25 @@
+variables:
+    global_variable: value    # this is available to all jobs
+  
+  jobs:
+  - job: create-resource-group
+    pool:
+        name: Azure Pipelines
+    steps:
+    - task: DockerInstaller@0
+        displayName: 'Install Docker 17.09.0-ce'
+    
+    - task: Bash@3
+        displayName: 'Bash Script'
+        inputs:
+        targetType: filePath
+        filePath: './general-resource-group/deploy.ci.sh'
+        workingDirectory: 'general-resource-group'
+        env:
+            ARM_CLIENT_NAME: $(ARM_CLIENT_NAME)
+            ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+            ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+            ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+            RG_NAME: $(RG_NAME)
+            RG_LOCATION: $(RG_LOCATION)
+            TAGS: $(TAGS)  

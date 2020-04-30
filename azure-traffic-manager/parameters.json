@@ -1,0 +1,21 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "sites_webappomi1_name": {
+            "value": "webappomi1"
+        },
+        "sites_webappomi2_name": {
+            "value": "webappomi2"
+        },
+        "serverfarms_myAppServicePlanEastUS_name": {
+            "value": "myAppServicePlanEastUS"
+        },
+        "serverfarms_myAppServicePlanWestUS_name": {
+            "value": "myAppServicePlanWestUS"
+        },
+        "trafficManagerProfiles_trafficmanageromiyale_name": {
+            "value": "trafficmanageromiyale"
+        }
+    }
+}

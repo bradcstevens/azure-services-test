@@ -1,0 +1,35 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "services_name": {
+            "defaultValue": "mspmigrate02",
+            "type": "String"
+        },
+        "virtualNetworks_externalid": {
+            "defaultValue": "/subscriptions/dd2c542a-aeaf-4cef-9ccd-e89ae5864c3f/resourceGroups/tp-SQLFCI/providers/Microsoft.Network/virtualNetworks/adVNET",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.DataMigration/services",
+            "apiVersion": "2017-11-15-privatepreview",
+            "name": "[parameters('services_name')]",
+            "location": "centralus",
+            "tags": {
+                "Owner": "Tim Poll"
+            },
+            "sku": {
+                "name": "Premium_4vCores",
+                "tier": "Premium",
+                "size": "4 vCores"
+            },
+            "kind": "Cloud",
+            "properties": {
+                "virtualSubnetId": "[concat(parameters('virtualNetworks_externalid'), '/subnets/s2d')]"
+            }
+        }
+    ]
+}

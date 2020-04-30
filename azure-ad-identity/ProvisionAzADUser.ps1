@@ -1,0 +1,1 @@
+Az ad user create --display-name "John bull" --password "Password@23" --user-principal-name john.bull@cdw.com.

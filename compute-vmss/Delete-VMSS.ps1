@@ -1,0 +1,1 @@
+az vmss delete --name nodesvmss --resource-group N-COMPUTE-VMSSRG

@@ -1,0 +1,2 @@
+New-AzResourceGroup -Name "MSP-NSG-Charles-Omi" -Location "Central US"
+New-AzResourceGroupDeployment -ResourceGroupName "MSP-NSG-Charles-Omi" -TemplateFile "C:\Users\charomi\Downloads\ARMScripts\Traffic Manager\ExportedTemplate-MSP-ARM-Charles-Omi (1)\template.json" -TemplateParameterFile "C:\Users\charomi\Downloads\ARMScripts\Traffic Manager\ExportedTemplate-MSP-ARM-Charles-Omi (1)\parameters.json"

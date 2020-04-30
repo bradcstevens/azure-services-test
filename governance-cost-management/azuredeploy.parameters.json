@@ -1,0 +1,27 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"accountName": {
+			"value": ""
+		},
+		"credentialName": {
+			"value": "spn_budget.automation"
+		},
+		"location": {
+			"value": "westus"
+		},
+		"servicePrincipalAppID": {
+			"value": "35d33230-7b2c-433b-824b-56996d3d86d6"
+		},
+		"servicePrincipalPassword": {
+			"value": "a5b0a4d8-e7ab-4a68-99d2-d2e808d43bb5"
+		},
+		"actionGroupName": {
+			"value": "cost-management"
+		},
+		"actionGroupShortName": {
+			"value": "budget"
+		}
+	}
+}

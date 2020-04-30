@@ -1,0 +1,31 @@
+pool:
+  name: Azure Pipelines
+steps:
+- task: DockerInstaller@0
+  displayName: 'Install Docker 17.09.0-ce'
+
+- task: Bash@3
+  displayName: 'Bash Script'
+  inputs:
+    targetType: filePath
+    filePath: './compute-vmss-public-web-server/deploy.ci.sh'
+    workingDirectory: 'compute-vmss-public-web-server'
+  env:
+    SPN_NAME: http://spn_brad.stevens
+    ARM_CLIENT_ID: 33bd3311-7b2e-4d56-83a4-9d7f198756c3
+    ARM_CLIENT_SECRET: 452bed3f-f3f5-4191-b8c6-fe8af51cabec
+    ARM_SUBSCRIPTION_ID: dd2c542a-aeaf-4cef-9ccd-e89ae5864c3f
+    ARM_TENANT_ID: de9231de-45f4-4325-ae07-8ae72052517e
+    ARM_OBJECT_ID: 771f7ff4-cbad-4a21-a74e-87bd1d376a9c
+    SUBSCRIPTION_NAME: CDW Professional Services
+    RG_NAME: msp-vmss-public-web-server
+    LOCATION: westus
+    TAGS: Owner=brad.stevens@cdw.com
+    AZURE_STORAGE_ACCOUNT_RESOURCE_GROUP_NAME: msp-artifact-storage-accounts
+    AZURE_STORAGE_ACCOUNT: mspvmssartificatssa01
+    AZURE_STORAGE_ACCOUNT_KIND: StorageV2
+    AZURE_STORAGE_ACCOUNT_SKU: Standard_LRS
+    JSON: azuredeploy.json
+    JSON_PARAM: azuredeploy.parameters.json
+    TEMP_JSON_PARAM: tmp.azuredeploy.parameters.json
+

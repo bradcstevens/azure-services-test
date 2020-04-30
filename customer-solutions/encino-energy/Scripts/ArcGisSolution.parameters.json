@@ -1,0 +1,346 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "eastus"
+        },
+        "networkSecurityGroupName": {
+            "value": "arcgis-nsg"
+        },
+        "networkSecurityGroupRules": {
+            "value": [
+                {
+                    "name": "default-allow-rdp",
+                    "properties": {
+                        "priority": 1000,
+                        "protocol": "TCP",
+                        "access": "Allow",
+                        "direction": "Inbound",
+                        "sourceApplicationSecurityGroups": [],
+                        "destinationApplicationSecurityGroups": [],
+                        "sourceAddressPrefix": "*",
+                        "sourcePortRange": "*",
+                        "destinationAddressPrefix": "*",
+                        "destinationPortRange": "3389"
+                    }
+                }
+            ]
+        },
+        "subnetName": {
+            "value": "arcgis"
+        },
+        "virtualNetworkName": {
+            "value": "msp-arcgis-vnet01"
+        },
+        "addressPrefixes": {
+            "value": [
+                "10.2.0.0/24"
+            ]
+        },
+        "subnets": {
+            "value": [
+                {
+                    "name": "arcgis",
+                    "properties": {
+                        "addressPrefix": "10.2.0.0/25"
+                    }
+                }
+            ]
+        },
+        "virtualMachineRG": {
+            "value": "MSP-MJS-ArcGIS01-EastUS"
+        },
+        "osDiskType": {
+            "value": "StandardSSD_LRS"
+        },
+        "virtualMachineSize": {
+            "value": "Standard_DS1_v2"
+        },
+        "adminUsername": {
+            "value": "AzureAdmin"
+        },
+        "adminPassword": {
+            "value": "dUELVyW2SF&m"
+        },
+        "VM01_virtualMachineName": {
+            "value": "arcgisGP01"
+        },
+        "VM01_networkInterfaceName": {
+            "value": "arcgisGP01710"
+        },
+        "VM01_dataDisks": {
+            "value": [
+                {
+                    "lun": 0,
+                    "createOption": "attach",
+                    "caching": "ReadOnly",
+                    "writeAcceleratorEnabled": false,
+                    "id": null,
+                    "name": "arcgisGP01_DataDisk_0",
+                    "storageAccountType": null,
+                    "diskSizeGB": null,
+                    "diskEncryptionSet": {
+                        "id": null
+                    }
+                }
+            ]
+        },
+        "VM01_dataDiskResources": {
+            "value": [
+                {
+                    "name": "arcgisGP01_DataDisk_0",
+                    "sku": "StandardSSD_LRS",
+                    "properties": {
+                        "diskSizeGB": 128,
+                        "creationData": {
+                            "createOption": "empty"
+                        }
+                    }
+                }
+            ]
+        },
+        "VM02_virtualMachineName": {
+            "value": "arcgisGP02"
+        },
+        "VM02_networkInterfaceName": {
+            "value": "arcgisGP02710"
+        },
+        "VM02_dataDisks": {
+            "value": [
+                {
+                    "lun": 0,
+                    "createOption": "attach",
+                    "caching": "ReadOnly",
+                    "writeAcceleratorEnabled": false,
+                    "id": null,
+                    "name": "arcgisGP02_DataDisk_0",
+                    "storageAccountType": null,
+                    "diskSizeGB": null,
+                    "diskEncryptionSet": {
+                        "id": null
+                    }
+                }
+            ]
+        },
+        "VM02_dataDiskResources": {
+            "value": [
+                {
+                    "name": "arcgisGP02_DataDisk_0",
+                    "sku": "StandardSSD_LRS",
+                    "properties": {
+                        "diskSizeGB": 128,
+                        "creationData": {
+                            "createOption": "empty"
+                        }
+                    }
+                }
+            ]
+        },
+        "VM03_virtualMachineName": {
+            "value": "arcgisS01"
+        },
+        "VM03_networkInterfaceName": {
+            "value": "arcgisS01710"
+        },
+        "VM03_dataDisks": {
+            "value": [
+                {
+                    "lun": 0,
+                    "createOption": "attach",
+                    "caching": "ReadOnly",
+                    "writeAcceleratorEnabled": false,
+                    "id": null,
+                    "name": "arcgisS01_DataDisk_0",
+                    "storageAccountType": null,
+                    "diskSizeGB": null,
+                    "diskEncryptionSet": {
+                        "id": null
+                    }
+                }
+            ]
+        },
+        "VM03_dataDiskResources": {
+            "value": [
+                {
+                    "name": "arcgisS01_DataDisk_0",
+                    "sku": "StandardSSD_LRS",
+                    "properties": {
+                        "diskSizeGB": 128,
+                        "creationData": {
+                            "createOption": "empty"
+                        }
+                    }
+                }
+            ]
+        },
+        "VM04_virtualMachineName": {
+            "value": "arcgisP01"
+        },
+        "VM04_networkInterfaceName": {
+            "value": "arcgisP01710"
+        },
+        "VM04_dataDisks": {
+            "value": [
+                {
+                    "lun": 0,
+                    "createOption": "attach",
+                    "caching": "ReadOnly",
+                    "writeAcceleratorEnabled": false,
+                    "id": null,
+                    "name": "arcgisP01_DataDisk_0",
+                    "storageAccountType": null,
+                    "diskSizeGB": null,
+                    "diskEncryptionSet": {
+                        "id": null
+                    }
+                }
+            ]
+        },
+        "VM04_dataDiskResources": {
+            "value": [
+                {
+                    "name": "arcgisP01_DataDisk_0",
+                    "sku": "StandardSSD_LRS",
+                    "properties": {
+                        "diskSizeGB": 128,
+                        "creationData": {
+                            "createOption": "empty"
+                        }
+                    }
+                }
+            ]
+        },
+        "DB01_networkInterfaceName": {
+            "value": "arcgisdb01749"
+        },
+        "DB01_enableAcceleratedNetworking": {
+            "value": true
+        },
+        "DB01_virtualMachineName": {
+            "value": "arcgisDB01"
+        },
+        "DB01_dataDisks": {
+            "value": [
+                {
+                    "lun": 0,
+                    "createOption": "attach",
+                    "caching": "ReadOnly",
+                    "writeAcceleratorEnabled": false,
+                    "id": null,
+                    "name": "arcgisDB01_DataDisk_0",
+                    "storageAccountType": null,
+                    "diskSizeGB": null,
+                    "diskEncryptionSet": {
+                        "id": null
+                    }
+                }
+            ]
+        },
+        "DB01_dataDiskResources": {
+            "value": [
+                {
+                    "name": "arcgisDB01_DataDisk_0",
+                    "sku": "Premium_LRS",
+                    "properties": {
+                        "diskSizeGB": 128,
+                        "creationData": {
+                            "createOption": "empty"
+                        }
+                    }
+                }
+            ]
+        },
+        "DB01_virtualMachineSize": {
+            "value": "Standard_DS11_v2"
+        },
+        "sqlVirtualMachineLocation": {
+            "value": "eastus"
+        },
+        "sqlVirtualMachineName": {
+            "value": "arcgisDB01"
+        },
+        "sqlConnectivityType": {
+            "value": "Private"
+        },
+        "sqlPortNumber": {
+            "value": 1433
+        },
+        "sqlStorageDisksCount": {
+            "value": 1
+        },
+        "sqlStorageWorkloadType": {
+            "value": "General"
+        },
+        "sqlStorageDisksConfigurationType": {
+            "value": "NEW"
+        },
+        "sqlStorageStartingDeviceId": {
+            "value": 2
+        },
+        "sqlStorageDeploymentToken": {
+            "value": 47898
+        },
+        "sqlAutopatchingDayOfWeek": {
+            "value": "Sunday"
+        },
+        "sqlAutopatchingStartHour": {
+            "value": "2"
+        },
+        "sqlAutopatchingWindowDuration": {
+            "value": "60"
+        },
+        "sqlAuthenticationLogin": {
+            "value": "EncinoAdmin"
+        },
+        "sqlAuthenticationPassword": {
+            "value": "dUELVyW2SF&m"
+        },
+        "dataPath": {
+            "value": "F:\\data"
+        },
+        "dataDisksLUNs": {
+            "value": [
+                0
+            ]
+        },
+        "logPath": {
+            "value": "F:\\log"
+        },
+        "logDisksLUNs": {
+            "value": [
+                0
+            ]
+        },
+        "tempDbPath": {
+            "value": "F:\\tempDb"
+        },
+        "tempDisksLUNs": {
+            "value": [
+                0
+            ]
+        },
+        "rServicesEnabled": {
+            "value": "false"
+        },
+		"accountName": {
+			"value": "VMAutomationAccount"
+		},
+		"credentialName": {
+			"value": "VMSchedule.automation"
+		},
+		"servicePrincipalAppID": {
+			"value": "2b219df9-f03e-43fc-aeda-905afa66ad71"
+		},
+		"servicePrincipalPassword": {
+			"value": "f6e24b5d-40c6-43f2-9939-227d3305c8d5"
+		},
+		"actionGroupName": {
+			"value": "cost-management"
+		},
+		"actionGroupShortName": {
+			"value": "Automation"
+		}
+
+    }
+}

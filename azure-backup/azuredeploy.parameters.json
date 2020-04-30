@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "VM Name": {
+            "value": "backuptestvm"
+        },
+        "RSV Name": {
+            "value": "backuptestrsv"
+        },
+        "VMNic Name": {
+            "value": "backtestvmnic1"
+        },
+        "Storage Account Name": {
+            "value": "backuprsargstoracct"
+        },
+        "VNet Name": {
+            "value": "backtestvnet"
+        },
+        "Admin Password": {
+            "value": "Chang3me!2020"
+        }
+    }
+}

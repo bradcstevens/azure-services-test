@@ -1,0 +1,138 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "eastus"
+        },
+        "networkSecurityGroupName": {
+            "value": "adds-nsg"
+        },
+        "networkSecurityGroupRules": {
+            "value": [
+                {
+                    "name": "default-allow-rdp",
+                    "properties": {
+                        "priority": 1000,
+                        "protocol": "TCP",
+                        "access": "Allow",
+                        "direction": "Inbound",
+                        "sourceApplicationSecurityGroups": [],
+                        "destinationApplicationSecurityGroups": [],
+                        "sourceAddressPrefix": "*",
+                        "sourcePortRange": "*",
+                        "destinationAddressPrefix": "*",
+                        "destinationPortRange": "3389"
+                    }
+                }
+            ]
+        },
+        "subnetName": {
+            "value": "adds"
+        },
+        "virtualNetworkName": {
+            "value": "msp-adds-vnet01"
+        },
+        "addressPrefixes": {
+            "value": [
+                "10.244.0.0/24"
+            ]
+        },
+        "subnets": {
+            "value": [
+                {
+                    "name": "adds",
+                    "properties": {
+                        "addressPrefix": "10.244.0.0/25"
+                    }
+                }
+            ]
+        },
+        "osDiskType": {
+            "value": "StandardSSD_LRS"
+        },
+        "virtualMachineSize": {
+            "value": "Standard_DS1_v2"
+        },
+        "adminUsername": {
+            "value": "AzureAdmin"
+        },
+        "adminPassword": {
+            "value": "dUELVyW2SF&m"
+        },
+        "VM01_virtualMachineName": {
+            "value": "adds01"
+        },
+        "VM01_networkInterfaceName": {
+            "value": "adds01710"
+        },
+        "VM01_dataDisks": {
+            "value": [
+                {
+                    "lun": 0,
+                    "createOption": "attach",
+                    "caching": "None",
+                    "writeAcceleratorEnabled": false,
+                    "id": null,
+                    "name": "adds01_DataDisk_0",
+                    "storageAccountType": null,
+                    "diskSizeGB": null,
+                    "diskEncryptionSet": {
+                        "id": null
+                    }
+                }
+            ]
+        },
+        "VM01_dataDiskResources": {
+            "value": [
+                {
+                    "name": "adds01_DataDisk_0",
+                    "sku": "StandardSSD_LRS",
+                    "properties": {
+                        "diskSizeGB": 32,
+                        "creationData": {
+                            "createOption": "empty"
+                        }
+                    }
+                }
+            ]
+        },
+        "VM02_virtualMachineName": {
+            "value": "adds02"
+        },
+        "VM02_networkInterfaceName": {
+            "value": "adds02710"
+        },
+        "VM02_dataDisks": {
+            "value": [
+                {
+                    "lun": 0,
+                    "createOption": "attach",
+                    "caching": "None",
+                    "writeAcceleratorEnabled": false,
+                    "id": null,
+                    "name": "adds02_DataDisk_0",
+                    "storageAccountType": null,
+                    "diskSizeGB": null,
+                    "diskEncryptionSet": {
+                        "id": null
+                    }
+                }
+            ]
+        },
+        "VM02_dataDiskResources": {
+            "value": [
+                {
+                    "name": "adds02_DataDisk_0",
+                    "sku": "StandardSSD_LRS",
+                    "properties": {
+                        "diskSizeGB": 32,
+                        "creationData": {
+                            "createOption": "empty"
+                        }
+                    }
+                }
+            ]
+        }
+    }
+}

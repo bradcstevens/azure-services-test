@@ -1,0 +1,1 @@
+az batch account delete --name eqx5fpszak3lmbatch --resource-group N- COMPUTE-VMSSRG

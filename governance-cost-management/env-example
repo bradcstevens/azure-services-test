@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Template location
+export JSON='azuredeploy.json'
+export JSON_PARAM='azuredeploy.parameters.json'
+export TEMP_JSON_PARAM='tmp.azuredeploy.parameters.json'
+
+# Subscription Settings
+export AZURE_SUBSCRIPTION_NAME='CDW Professional Services'
+
+# Service Principal Settings
+export AD_SP_NAME='spn_budget.automation'
+export RBAC_ROLE='Owner'
+
+# Azure Automation Settings
+export RG_NAME='msp-azure-automation-account'
+export LOCATION='westus'
+export DEPLOYMENT_NAME='budget.automation'
+export CREDENTIAL_NAME='spn_budget.automation'
+export TAGS='Owner=brad.stevens@cdw.com'
+
+# Azure Budget Settings
+export BUDGET_NAME='Initial 100'
+export BUDGET_AMOUNT='100'
+export BUDGET_CATEGORY='cost'
+export BUDGET_FREQUENCY='monthly'
+# Start date should be the first day of the month
+# Start date for monthly time grain should not be prior to current month
+export BUDGET_START_DATE='2019-12-01'
+export BUDGET_END_DATE='2023-12-31'
+export BUDGET_RESOURCE_GROUP_NAME='BCS-sourceVm-Rg01'
+
+# Action Group Settings
+export ACTION_GROUP_NAME='cost-management'
+export ACTION_GROUP_SHORT_NAME='budget'

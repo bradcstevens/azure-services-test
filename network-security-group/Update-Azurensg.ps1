@@ -1,0 +1,1 @@
+az network nsg update -g "MSP-NSG-Charles-Omi" -n "NSGVN-nsg" --remove tags.no_80

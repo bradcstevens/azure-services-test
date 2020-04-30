@@ -1,0 +1,43 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "administratorLogin": {
+            "value": ""
+        },
+        "administratorLoginPassword": {
+            "value": ""
+        },
+        "collation": {
+            "value": "SQL_Latin1_General_CP1_CI_AS"
+        },
+        "databaseName": {
+            "value": "dw03"
+        },
+        "location": {
+            "value": "centralus"
+        },
+        "skuName": {
+            "value": "DW1000c"
+        },
+        "serverName": {
+            "value": "dwserver01"
+        },
+        "version": {
+            "value": "12.0"
+        },
+        "allowAzureIps": {
+            "value": false
+        },
+        "databaseTags": {
+            "value": {
+                "Owner": "Tim Poll"
+            }
+        },
+        "serverTags": {
+            "value": {
+                "Owner": "Tim Poll"
+            }
+        }
+    }
+}

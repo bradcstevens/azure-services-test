@@ -1,0 +1,122 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "DNS Zone Name": {
+            "defaultValue": "mspazurecdw.com",
+            "type": "String"
+        }
+    },
+    "variables": {},
+    "resources": [
+        {
+            "type": "Microsoft.Network/dnszones",
+            "apiVersion": "2018-05-01",
+            "name": "[parameters('DNS Zone Name')]",
+            "location": "global",
+            "properties": {
+                "zoneType": "Public"
+            }
+        },
+        {
+            "type": "Microsoft.Network/dnszones/A",
+            "apiVersion": "2018-05-01",
+            "name": "[concat(parameters('DNS Zone Name'), '/www')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/dnszones', parameters('DNS Zone Name'))]"
+            ],
+            "properties": {
+                "TTL": 3600,
+                "ARecords": [
+                    {
+                        "ipv4Address": "1.2.3.4"
+                    },
+                    {
+                        "ipv4Address": "1.2.3.5"
+                    }
+                ],
+                "targetResource": {}
+            }
+        },
+        {
+            "type": "Microsoft.Network/dnszones/CNAME",
+            "apiVersion": "2018-05-01",
+            "name": "[concat(parameters('DNS Zone Name'), '/portal')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/dnszones', parameters('DNS Zone Name'))]"
+            ],
+            "properties": {
+                "TTL": 3600,
+                "CNAMERecord": {
+                    "cname": "webapp.mspazurecdw.com"
+                },
+                "targetResource": {}
+            }
+        },
+        {
+            "type": "Microsoft.Network/dnszones/MX",
+            "apiVersion": "2018-05-01",
+            "name": "[concat(parameters('DNS Zone Name'), '/mail')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/dnszones', parameters('DNS Zone Name'))]"
+            ],
+            "properties": {
+                "TTL": 3600,
+                "MXRecords": [
+                    {
+                        "exchange": "mail.mspazurecdw.com",
+                        "preference": 1
+                    }
+                ],
+                "targetResource": {}
+            }
+        },
+        {
+            "type": "Microsoft.Network/dnszones/NS",
+            "apiVersion": "2018-05-01",
+            "name": "[concat(parameters('DNS Zone Name'), '/@')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/dnszones', parameters('DNS Zone Name'))]"
+            ],
+            "properties": {
+                "TTL": 172800,
+                "NSRecords": [
+                    {
+                        "nsdname": "ns1-04.azure-dns.com."
+                    },
+                    {
+                        "nsdname": "ns2-04.azure-dns.net."
+                    },
+                    {
+                        "nsdname": "ns3-04.azure-dns.org."
+                    },
+                    {
+                        "nsdname": "ns4-04.azure-dns.info."
+                    }
+                ],
+                "targetResource": {}
+            }
+        },
+        {
+            "type": "Microsoft.Network/dnszones/SOA",
+            "apiVersion": "2018-05-01",
+            "name": "[concat(parameters('DNS Zone Name'), '/@')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/dnszones', parameters('DNS Zone Name'))]"
+            ],
+            "properties": {
+                "TTL": 3600,
+                "SOARecord": {
+                    "email": "azuredns-hostmaster.microsoft.com",
+                    "expireTime": 2419200,
+                    "host": "ns1-04.azure-dns.com.",
+                    "minimumTTL": 300,
+                    "refreshTime": 3600,
+                    "retryTime": 300,
+                    "serialNumber": 1
+                },
+                "targetResource": {}
+            }
+        }
+    ]
+}

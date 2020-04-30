@@ -1,0 +1,192 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "resourcePrefix": {
+        "type": "string",
+        "defaultValue": "WebVM",
+        "metadata": {
+          "description": "Globally Unique Prefix"
+        }
+      },
+      "vmssName": {
+        "type": "string",
+        "defaultValue": "WebVM",
+        "metadata": {
+          "description": "VM Name"
+        }
+      },
+      "vmssInstanceCount": {
+        "type": "int",
+        "defaultValue": 2,
+        "metadata": {
+          "description": "Number of VM instances (100 or less)."
+        },
+        "maxValue": 100
+      },
+      "adminUsername": {
+        "type": "string",
+        "metadata": {
+          "description": "User name for the Virtual Machine."
+        }
+      },
+      "adminPassword": {
+        "type": "securestring",
+        "metadata": {
+          "description": "Password for the Virtual Machine."
+        }
+      },
+		  "storageAccountName": {
+			  "type": "string",
+        "metadata": {
+          "description": "Artifact Storage Account Name"
+        }
+		  },
+		  "storageAccountKey": {
+			  "type": "string",
+        "metadata": {
+          "description": "Artifact Storage Account Key"
+        }
+		  },
+		  "storageAccountNestedTemplatesToken": {
+			  "type": "string",
+        "metadata": {
+          "description": "Nested Templates Artifact Storage Account Secure Access Signature"
+        }
+		  },
+      "VmssStorageAccountBlobUrl": {
+        "type": "string",
+        "metadata": {
+          "description": "Artifact Storage Account Blog URL for VMSS"
+        }
+      },
+      "VnetStorageAccountBlobUrl": {
+        "type": "string",
+        "metadata": {
+          "description": "Artifact Storage Account Blog URL for VNET"
+        }
+      },
+      "ubuntuOSVersion": {
+        "type": "string",
+        "defaultValue": "16.04-LTS",
+        "allowedValues": [
+          "12.04.5-LTS",
+          "14.04.2-LTS",
+          "15.10",
+          "16.04-LTS"
+        ],
+        "metadata": {
+          "description": "The Ubuntu version for the VM. This will pick a fully patched image of this given Ubuntu version. Allowed values: 12.04.5-LTS, 14.04.2-LTS, 15.10."
+        }
+      },
+      "vnetName": {
+        "type": "string",
+        "defaultValue": "VNet",
+        "metadata": {
+          "description": "VNet Name"
+        }
+      },
+      "vnetPrefix": {
+        "type": "string",
+        "defaultValue": "10.0.0.0/16",
+        "metadata": {
+          "description": "Address Prefix"
+        }
+      },
+      "subnetName": {
+        "type": "string",
+        "defaultValue": "Default",
+        "metadata": {
+          "description": "Subnet Name"
+        }
+      },
+      "subnetPrefix": {
+        "type": "string",
+        "defaultValue": "10.0.0.0/24",
+        "metadata": {
+          "description": "Subnet Prefix"
+        }
+      }
+    },
+    "variables": {
+      "subnetRef": "[concat(resourceId('Microsoft.Network/virtualNetworks',parameters('vnetName')),'/subnets/',parameters('subnetName'))]",
+      "vnetTemplateURL": "[concat(parameters('VnetStorageAccountBlobUrl'),'?',parameters('storageAccountNestedTemplatesToken'))]",
+      "vmssTemplateURL": "[concat(parameters('VmssStorageAccountBlobUrl'),'?',parameters('storageAccountNestedTemplatesToken'))]"
+    },
+    "resources": [
+      {
+        "name": "vnet_deployment",
+        "type": "Microsoft.Resources/deployments",
+        "apiVersion": "2015-01-01",
+        "properties": {
+          "mode": "Incremental",
+          "templateLink": {
+            "uri": "[variables('vnetTemplateUrl')]",
+            "contentVersion": "1.0.0.0"
+          },
+          "parameters": {
+            "vnetName": {
+              "value": "[parameters('vnetName')]"
+            },
+            "vnetPrefix": {
+              "value": "[parameters('vnetPrefix')]"
+            },
+            "subnetName": {
+              "value": "[parameters('subnetName')]"
+            },
+            "subnetPrefix": {
+              "value": "[parameters('subnetPrefix')]"
+            }
+          }
+        }
+      },
+      {
+        "name": "vmss_deployment",
+        "type": "Microsoft.Resources/deployments",
+        "apiVersion": "2015-01-01",
+        "dependsOn": [
+          "[concat('Microsoft.Resources/deployments/', 'vnet_deployment')]"
+        ],
+        "properties": {
+          "mode": "Incremental",
+          "templateLink": {
+            "uri": "[variables('vmssTemplateUrl')]",
+            "contentVersion": "1.0.0.0"
+          },
+          "parameters": {
+            "resourcePrefix": {
+              "value": "[parameters('resourcePrefix')]"
+            },
+            "vmssName": {
+              "value": "[parameters('vmssName')]"
+            },
+            "vmssInstanceCount": {
+              "value": "[parameters('vmssInstanceCount')]"
+            },
+            "subnetRef": {
+              "value": "[variables('subnetRef')]"
+            },
+            "adminUsername": {
+              "value": "[parameters('adminUsername')]"
+            },
+            "adminPassword": {
+              "value": "[parameters('adminPassword')]"
+            },
+            "ubuntuOSVersion": {
+              "value": "[parameters('ubuntuOSVersion')]"
+            },
+            "storageAccountName": {
+              "value": "[parameters('storageAccountName')]"
+            },
+            "storageAccountKey": {
+              "value": "[parameters('storageAccountKey')]"
+            },
+            "storageAccountNestedTemplatesToken": {
+              "value": "[parameters('storageAccountNestedTemplatesToken')]"
+            }
+          }
+        }
+      }
+    ],
+    "outputs": {}
+}
