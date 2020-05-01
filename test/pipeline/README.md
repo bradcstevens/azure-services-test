@@ -1,15 +1,4 @@
-# Setting Up Your Own CI/CD Pipeline in Azure DevOps
-
-A bit terse for now, but if you want to set up your own AzDO pipeline here are the steps.  Please update this file if you find something missing or unclear.
-
-## After Exporting the Pipeline
-
-You can skip this section if you just need to import a pipeline.
-
-- remove "options" property (if present)
-- remove "_links" property
-- set "badgeEnabled" property to false (doesn't make sense for this repo)
-- remove the "queue" property
+# Setting Up the CI/CD Pipeline in Azure DevOps
 
 ## Before Importing the Pipeline
 
