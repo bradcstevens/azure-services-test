@@ -21,7 +21,7 @@ Param(
 )
 
 try {
-    [Microsoft.Azure.Common.Authentication.AzureSession]::ClientFactory.AddUserAgent("AzQuickStarts-$UI$($host.name)".replace(" ", "_"), "1.0")
+    [Microsoft.Azure.Common.Authentication.AzureSession]::ClientFactory.AddUserAgent("Az-$UI$($host.name)".replace(" ", "_"), "1.0")
 }
 catch { }
 
