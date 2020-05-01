@@ -1,8 +1,8 @@
 ﻿param(
     $BuildSourcesDirectory = "$ENV:BUILD_SOURCESDIRECTORY",
-    $StorageAccountResourceGroupName = "azure-quickstarts-service-storage",
-    $StorageAccountName = "azurequickstartsservice",
-    $TableName = "QuickStartsMetadataService",
+    $StorageAccountResourceGroupName = "",
+    $StorageAccountName = "",
+    $TableName = "",
     [Parameter(mandatory=$true)]$StorageAccountKey, 
     $ResultDeploymentLastTestDateParameter = "$ENV:RESULT_DEPLOYMENT_LAST_TEST_DATE_PARAMETER", # sort based on the cloud we're testing FF or Public
     $ResultDeploymentParameter = "$ENV:RESULT_DEPLOYMENT_PARAMETER", #also cloud specific
