@@ -8,10 +8,10 @@ Typical scenario is that results will be passed in for only one cloud Public or 
 param(
     [string]$SampleFolder = $ENV:SAMPLE_FOLDER, # this is the full absolute path to the sample
     [string]$SampleName = $ENV:SAMPLE_NAME, # the name of the sample or folder path from the root of the repo (i.e. relative path) e.g. "sample-type/sample-name"
-    [string]$StorageAccountResourceGroupName = "azure-quickstarts-service-storage",
-    [string]$StorageAccountName = "azurequickstartsservice",
-    [string]$TableName = "QuickStartsMetadataService",
-    [string]$TableNamePRs = "QuickStartsMetadataServicePRs",
+    [string]$StorageAccountResourceGroupName = "",
+    [string]$StorageAccountName = "",
+    [string]$TableName = "",
+    [string]$TableNamePRs = "",
     [Parameter(mandatory = $true)]$StorageAccountKey, 
     [string]$BestPracticeResult = "$ENV:RESULT_BEST_PRACTICE",
     [string]$CredScanResult = "$ENV:RESULT_CREDSCAN",
@@ -390,27 +390,3 @@ foreach ($badge in $badges) {
         -Properties @{"ContentType" = "image/svg+xml"; "CacheControl" = "no-cache" } `
         -Force -Verbose
 }
-
-<#Debugging only
-
-$HTML = "<HTML>"
-foreach ($badge in $badges) {
-    $HTML += "<IMG SRC=`"$($badge.url)`" />&nbsp;"
-}
-$HTML += "</HTML>"
-$HTML | Set-Content -path "test.html"
-
-<#
-
-Snippet that will be placed in the README.md files
-
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/100-blank-template/PublicLastTestDate.svg" />&nbsp;
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/100-blank-template/PublicDeployment.svg" />&nbsp;
-
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/100-blank-template/FairfaxLastTestDate.svg" />&nbsp;
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/100-blank-template/FairfaxDeployment.svg" />&nbsp;
-
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/100-blank-template/BestPracticeResult.svg" />&nbsp;
-<IMG SRC="https://azurequickstartsservice.blob.core.windows.net/badges/100-blank-template/CredScanResult.svg" />&nbsp;
-
-#>

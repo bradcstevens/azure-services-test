@@ -29,7 +29,7 @@ The output of the script will be a JSON blob on the console, you can take that o
 
 For everything not in **Section 2** of the .config.json, you have two options:
 
-1. Leave all of these urls "as is" - the artifacts from the public QuickStart repo are generic and you should be able to use them in any generic test
+1. Leave all of these urls "as is" - the artifacts from the azure repo are generic and you should be able to use them in any generic test
 1. Create your own set of artifacts - you can to this by copying the public ones or simply creating your own as appropriate.
 
 ### Creating a Service Principal for AKS

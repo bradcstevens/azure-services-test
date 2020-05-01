@@ -1,1 +1,723 @@
-{"options":[{"enabled":false,"definition":{"id":"5d58cc01-7c75-450c-be18-a388ddb129ec"},"inputs":{"branchFilters":"[\"+refs/heads/*\"]","additionalFields":"{}"}},{"enabled":false,"definition":{"id":"a9db38f9-9fdc-478c-b0f9-464221e58316"},"inputs":{"workItemType":"Issue","assignToRequestor":"true","additionalFields":"{}"}}],"triggers":[{"branchFilters":["+master"],"forks":{"enabled":true,"allowSecrets":true},"pathFilters":["-/test/*","-/1-CONTRIBUTION-GUIDE/*","-/.github/*"],"requireCommentsForNonTeamMembersOnly":false,"isCommentRequiredForPullRequest":false,"triggerType":64},{"branchFilters":["+master"],"pathFilters":[],"batchChanges":false,"maxConcurrentBuildsPerBranch":1,"pollingInterval":0,"triggerType":2}],"variables":{"app.id":{"value":"b50cb267-4fdf-4fd1-86f8-cbbdc85ce3dc"},"app.id.admin":{"value":"b50cb267-4fdf-4fd1-86f8-cbbdc85ce3dc"},"app.secret":{"value":null,"isSecret":true},"app.secret.admin":{"value":null,"isSecret":true},"config.file.uri":{"value":"https://azbotstorage.blob.core.windows.net/gen-artifacts-config/.config.json?st=2019-07-08T15%3A34%3A11Z&se=2029-07-09T15%3A34%3A00Z&sp=rl&sv=2018-03-28&sr=c&sig=2lONV85wm%2FFJ8zK89NoZ3QmkEjNBgqD3IIX9wUiseAI%3D"},"gen.parameters.filename":{"value":"gen.azuredeploy.parameters.json"},"gen.prereq.parameters.filename":{"value":"gen.prereq.parameters.json"},"git.folder":{"value":"$(Agent.BuildDirectory)\\s\\test"},"location":{"value":"westus"},"mainTemplate.deployment.name":{"value":null,"isSecret":true},"prereq.deployment.name":{"value":"prereq-deployment"},"prereq.outputs.filename":{"value":"prereq.outputs.json"},"prereq.resourceGroup.name":{"value":"<this will set by a pipeline task>"},"resourceGroup.name":{"value":"<this will set by a pipeline task>"},"result.best.practice":{"value":"False"},"result.credscan":{"value":""},"result.deployment":{"value":"False"},"result.deployment.last.test.date.parameter":{"value":""},"result.deployment.parameter":{"value":"PublicDeployment"},"sample.folder":{"value":"<this will set by a pipeline task>"},"skipComponentGovernanceDetection":{"value":"true"},"subscription.id":{"value":"06c1b208-321f-4f6f-95d2-0a07b3cb7570"},"system.debug":{"value":"false","allowOverride":true},"tenant.id":{"value":"8f1f3ea1-c038-4ce1-8672-ec583b47f8dd"},"ttk.asset.filename":{"value":"arm-ttk.zip"},"ttk.uri":{"value":"https://github.com/Azure/arm-ttk/archive/master.zip"}},"properties":{},"tags":[],"_links":{"self":{"href":"https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_apis/build/Definitions/8?revision=59"},"web":{"href":"https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_build/definition?definitionId=8"},"editor":{"href":"https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_build/designer?id=8&_a=edit-build-definition"},"badge":{"href":"https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_apis/build/status/8"}},"jobAuthorizationScope":1,"jobTimeoutInMinutes":360,"jobCancelTimeoutInMinutes":15,"badgeEnabled":true,"process":{"phases":[{"steps":[{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Download TTK","timeoutInMinutes":0,"condition":"succeeded()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"inline","filePath":"","arguments":"","script":"Invoke-WebRequest -uri '$(ttk.uri)' -OutFile \"$(git.folder)/$(ttk.asset.filename)\" -Verbose\nGet-ChildItem '$(git.folder)' -Recurse\n\nWrite-Host \"Expanding files...\"\nExpand-Archive -Path '$(git.folder)/*.zip' -DestinationPath '$(git.folder)' -Verbose\n\nWrite-Host \"Expanded files found:\"\nGet-ChildItem '$(git.folder)' -Recurse","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Connect To Azure (Admin) To Create RGs","timeoutInMinutes":0,"condition":"succeeded()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)/ci-scripts/ConnectTo-Azure.ps1","arguments":"-appId $(app.id.admin) -secret $(app.secret.admin) -tenantId $(tenant.id) -subscriptionId $(subscription.id) -InstallAzModule","script":"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Get Folder for Solution","timeoutInMinutes":0,"condition":"succeeded()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)\\ci-scripts\\Get-SampleFolder.ps1","arguments":"","script":"<#\nThis script will find the sample folder for the PR - Test are run on that folder only\nIf the PR contains more than one sample the build must fail\nIf the PR does not contain changes to a sample folder, it will currently fail but we'll TODO this to\npass the build in order to trigger a manual review\n#>\n\nGet-ChildItem env: # debugging\n\n# Get-ChildItem env: # debugging\n\n$GitHubRepository = $ENV:BUILD_REPOSITORY_NAME\n$RepoRoot = $ENV:BUILD_REPOSITORY_LOCALPATH\n\nif ($ENV:BUILD_REASON -eq \"PullRequest\") {\n    $GitHubPRNumber = $ENV:SYSTEM_PULLREQUEST_PULLREQUESTNUMBER\n}\nelseif ($ENV:BUILD_REASON -eq \"BatchedCI\" -or $ENV:BUILD_REASON -eq \"IndividualCI\" -or $ENV:BUILD_REASON -eq \"Manual\") {\n    <#\n        When a CI trigger is running, we get no information in the environment about what changed in the incoming PUSH (i.e. PR# or files changed) except...\n        In the source version message - so even though this fragile, we can extract from there - the expected format is:\n        BUILD_SOURCEVERSIONMESSAGE = \"Merge pull request #9 from bmoore-msft/bmoore-msft-patch-2…\"\n    #>\n    try {\n        $pr = $ENV:BUILD_SOURCEVERSIONMESSAGE # TODO: sometimes AzDO is not setting the message, not clear why...\n        $begin = 0\n        $begin = $pr.IndexOf(\"#\") # look for the #\n    }\n    catch { }\n    if ($begin -ge 0) {\n        $end = $pr.IndexOf(\" \", $begin) # look for the trailing space\n        $GitHubPRNumber = $pr.Substring($begin + 1, $end - $begin - 1)\n    }\n    else {\n        Write-Error \"BuildSourceVersionMessage does not contain PR #: `'$pr`'\"\n    }\n}\nelse {\n    Write-Error \"Unknown Build Reason ($ENV:BUILD_REASON) - cannot get PR number... \"\n}\n\n$PRUri = \"https://api.github.com/repos/$($GitHubRepository)/pulls/$($GitHubPRNumber)/files\"\n\n# Get all of the files changed in the PR\n$ChangedFile = Invoke-Restmethod \"$PRUri\"\n\n# Now check to make sure there is exactly one sample in this PR per repo guidelines\n$FolderArray = @()\n$ChangedFile | ForEach-Object {\n    Write-Output $_.blob_url\n    if ($_.status -ne \"removed\") {\n        # ignore deleted files, for example when a sample folder is renamed\n        $CurrentPath = Split-Path (Join-Path -path $RepoRoot -ChildPath $_.filename)\n \n        # File in root of repo - TODO: should we block this?\n        If ($CurrentPath -eq $RepoRoot) {\n            Write-Error \"### Error ### The file $($_.filename) is in the root of the repository. A PR can only contain changes to files from a sample folder at this time.\"\n        }\n        Else {\n            # find metadata.json\n            while (!(Test-Path (Join-Path -path $CurrentPath -ChildPath \"metadata.json\")) -and $CurrentPath -ne $RepoRoot) {\n                $CurrentPath = Split-Path $CurrentPath # if it's not in the same folder as this file, search it's parent\n            }\n            # if we made it to the root searching for metadata.json write the error\n            If ($CurrentPath -eq $RepoRoot) {\n                Write-Error \"### Error ### The scenario folder for $($_.filename) does not include a metadata.json file. Please add a metadata.json file to your scenario folder as part of the pull request.\"\n            }\n            Else {\n                $FolderArray += $currentpath\n            }\n        }\n    }\n}\n\n# Get the unique paths we found metadata.json in - there should be no more then one\n$FolderArray = @($FolderArray | Select-Object -Unique)\n \nIf ($FolderArray.count -gt 1) {\n    Write-Error \"### Error ### The Pull request contains file changes from $($FolderArray.count) scenario folders. A pull request can only contain changes to files from a single scenario folder.\"\n}\n\n# Update pipeline variable with the sample folder\n$FolderString = $FolderArray[0]\nWrite-Output \"Using sample folder: $FolderString\"\nWrite-Host \"##vso[task.setvariable variable=sample.folder]$FolderString\"\n\n$sampleName = $FolderString.Replace(\"$ENV:BUILD_SOURCESDIRECTORY\\\", \"\")\nWrite-Output \"Using sample name: $sampleName\"\nWrite-Host \"##vso[task.setvariable variable=sample.name]$sampleName\"\n","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":true,"alwaysRun":true,"displayName":"Validate README.md","timeoutInMinutes":0,"condition":"succeededOrFailed()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)\\ci-scripts\\Validate-ReadMe.ps1","arguments":"","script":"","errorActionPreference":"continue","failOnStderr":"true","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":true,"alwaysRun":false,"displayName":"Run Best Practices Tests","timeoutInMinutes":0,"condition":"succeeded()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"inline","filePath":"","arguments":"","script":"Import-Module $(git.folder)/arm-ttk-master/arm-ttk/arm-ttk.psd1 -Verbose\n$testOutput = @(Test-AzTemplate -TemplatePath \"$(sample.folder)\")\n$testOutput\n\nif ($testOutput | ? {$_.Errors }) {\n   exit 1 \n} else {\n    Write-Host \"##vso[task.setvariable variable=result.best.practice]$true\"\n    exit 0\n} \n","errorActionPreference":"continue","failOnStderr":"true","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Generate RG Names and Check for Prereqs","timeoutInMinutes":0,"condition":"succeeded()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)\\ci-scripts\\Gen-ResourceGroupNames.ps1","arguments":"-sampleFolder $(sample.folder)","script":"# Write your PowerShell commands here.\n\nWrite-Host \"Hello World\"\n","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":true,"alwaysRun":false,"displayName":"Create ResourceGroup - Assign RBAC (mainTemplate RG)","timeoutInMinutes":0,"condition":"succeeded()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)/ci-scripts/Create-ResourceGroupAssignment.ps1","arguments":"-ResourceGroupName \"$(resourceGroup.name)\" -Location $(location) -appId $(app.id)","script":"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":true,"alwaysRun":false,"displayName":"Create ResourceGroup - Assign RBAC (prereqs RG) ","timeoutInMinutes":0,"condition":"and(succeeded(), eq(variables['deploy.prereqs'], 'true'), ne(variables['prereq.resourceGroup.name'], variables['resourceGroup.name']))","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)/ci-scripts/Create-ResourceGroupAssignment.ps1","arguments":"-ResourceGroupName \"$(prereq.resourceGroup.name)\" -Location $(location) -appId $(app.id)","script":"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Connect To Azure (non-Admin) To Deploy","timeoutInMinutes":0,"condition":"succeeded()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)/ci-scripts/ConnectTo-Azure.ps1","arguments":"-appId $(app.id) -secret $(app.secret) -tenantId $(tenant.id) -subscriptionId $(subscription.id)","script":"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"GEN Parameters (Prereqs)","timeoutInMinutes":0,"condition":"and(succeeded(), eq(variables['deploy.prereqs'], 'true'))","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)/ci-scripts/Gen-TemplateParameters.ps1","arguments":"-configUri \"$(config.file.uri)\" -TemplateParametersFile \"$(sample.folder)\\prereqs\\prereq.azuredeploy.parameters.json\" -NewTemplateParametersFile \"$(sample.folder)\\prereqs\\$(gen.prereq.parameters.filename)\"","script":"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Deploy Template (prereqs)","timeoutInMinutes":0,"condition":"and(succeeded(), eq(variables['deploy.prereqs'], 'true'))","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)\\Deploy-AzTemplate.ps1","arguments":"-ArtifactStagingDirectory \"$(sample.folder)\\prereqs\" -Location \"$(Location)\" -ResourceGroupName \"$(prereq.resourceGroup.name)\" -TemplateParametersFile \"$(sample.folder)\\prereqs\\$(gen.prereq.parameters.filename)\" -DeploymentName \"$(prereq.deployment.name)\" -TemplateFile \"$(sample.folder)\\prereqs\\prereq.azuredeploy.json\"","script":"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Dump Outputs To File (prereqs)","timeoutInMinutes":0,"condition":"and(succeeded(), eq(variables['deploy.prereqs'], 'true'))","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"inline","filePath":"","arguments":"","script":"$PreReqOutputs = (Get-AzResourceGroupDeployment -ResourceGroupName \"$(prereq.resourceGroup.name)\" -Name $(prereq.deployment.name)).Outputs | ConvertTo-Json\nWrite-Host \"$PreReqOutputs\"\n\n###Write-Output \"##vso[task.setvariable variable=prereq.config.json]$PreReqOutputs\"\n\n$PreReqOutputs | Out-File -FilePath \"$(sample.folder)\\prereqs\\$(prereq.outputs.filename)\"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"GEN mainTemplate Params","timeoutInMinutes":0,"condition":"succeeded()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)/ci-scripts/Gen-TemplateParameters.ps1","arguments":"-configUri \"$(config.file.uri)\" -TemplateParametersFile \"$(sample.folder)\\azuredeploy.parameters.json\" -NewTemplateParametersFile \"$(sample.folder)\\$(gen.parameters.filename)\" -prereqOutputsFileName \"$(sample.folder)\\prereqs\\$(prereq.outputs.filename)\"","script":"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Deploy mainTemplate","timeoutInMinutes":0,"condition":"succeeded()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"inline","filePath":"","arguments":"","script":"$(git.folder)\\ci-scripts\\Deploy-AzTemplate.ps1 `\n    -ArtifactStagingDirectory \"$(sample.folder)\" `\n    -Location \"$(Location)\" `\n    -ResourceGroupName \"$(resourceGroup.name)\" `\n    -TemplateParametersFile \"$(sample.folder)\\$(gen.parameters.filename)\" `\n    -DeploymentName \"$(mainTemplate.deployment.name)\"\n\nWrite-Host \"##vso[task.setvariable variable=result.deployment]$true\"\n\n","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Connect To Azure (Admin) To Clean Up","timeoutInMinutes":0,"condition":"always()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)/ci-scripts/ConnectTo-Azure.ps1","arguments":"-appId $(app.id.admin) -secret $(app.secret.admin) -tenantId $(tenant.id) -subscriptionId $(subscription.id)","script":"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":true,"alwaysRun":true,"displayName":"Write Test Result for README.MD","timeoutInMinutes":0,"condition":"succeededOrFailed()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"filePath","filePath":"$(git.folder)\\ci-scripts\\Write-TestResults.ps1","arguments":"-$(result.deployment.parameter) $(result.deployment)","script":"","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Clean Up ResourceGroup (main)","timeoutInMinutes":0,"condition":"always()","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"inline","filePath":"","arguments":"","script":"# remove the resource group\nWrite-Host \"First attempt...\"\n& $(git.folder)/ci-scripts/Kill-AzResourceGroup.ps1 -ResourceGroupName \"$(resourceGroup.name)\" -ErrorAction SilentlyContinue\n\n# if the resource group still exists after the first attempt, try again after a few minutes\nWrite-Host \"Checking for ResourceGroup…\"\nif ((Get-AzResourceGroup -Name \"$(resourceGroup.name)\" -verbose -ErrorAction SilentlyContinue) -ne $null) {\n\n    Write-Host \"Found the resource group - sleeping...\" \n    Sleep 600\n    Write-Host \"Attempting Kill-AzResourceGroup…\"\n    & $(git.folder)/ci-scripts/Kill-AzResourceGroup.ps1 -ResourceGroupName \"$(resourceGroup.name)\"\n\n}\n","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}},{"environment":{},"enabled":true,"continueOnError":false,"alwaysRun":false,"displayName":"Clean Up ResourceGroup (prereqs)","timeoutInMinutes":0,"condition":"and(always(), eq(variables['deploy.prereqs'], 'true'), ne(variables['prereq.resourceGroup.name'], variables['resourceGroup.name']))","task":{"id":"e213ff0f-5d5c-4791-802d-52ea3e7be1f1","versionSpec":"2.*","definitionType":"task"},"inputs":{"targetType":"inline","filePath":"","arguments":"","script":"# remove the resource group\nWrite-Host \"First attempt...\"\n& $(git.folder)/ci-scripts/Kill-AzResourceGroup.ps1 -ResourceGroupName \"$(prereq.resourceGroup.name)\" -ErrorAction SilentlyContinue\n\n# if the resource group still exists after the first attempt, try again after a few minutes\nWrite-Host \"Checking for ResourceGroup…\"\nif ((Get-AzResourceGroup -Name \"$(prereq.resourceGroup.name)\" -verbose -ErrorAction SilentlyContinue) -ne $null) {\n\n    Write-Host \"Found the resource group - sleeping...\" \n    Sleep 600\n    Write-Host \"Attempting Kill-AzResourceGroup…\"\n    & $(git.folder)/ci-scripts/Kill-AzResourceGroup.ps1 -ResourceGroupName \"$(prereq.resourceGroup.name)\"\n}\n","errorActionPreference":"stop","failOnStderr":"false","ignoreLASTEXITCODE":"false","pwsh":"true","workingDirectory":""}}],"name":"Agent job 1","refName":"Job_1","condition":"succeeded()","target":{"executionOptions":{"type":0},"allowScriptsAuthAccessOption":false,"type":1},"jobAuthorizationScope":1,"jobTimeoutInMinutes":360}],"target":{"agentSpecification":{"identifier":"windows-2019"}},"type":1},"repository":{"properties":{"apiUrl":"https://api.github.com/repos/bradcstevens/azure-services-test","branchesUrl":"https://api.github.com/repos/bradcstevens/azure-services-test/branches","cloneUrl":"https://github.com/bradcstevens/azure-services-test.git","connectedServiceId":"3b4db9d3-5724-4e83-91ec-449525c8b897","defaultBranch":"master","fullName":"bradcstevens/azure-services-test","hasAdminPermissions":"True","isFork":"False","isPrivate":"False","lastUpdated":"05/01/2020 03:24:21","manageUrl":"https://github.com/bradcstevens/azure-services-test","nodeId":"MDEwOlJlcG9zaXRvcnkyNjAzNDIyNTg=","ownerId":"10226195","orgName":"bradcstevens","refsUrl":"https://api.github.com/repos/bradcstevens/azure-services-test/git/refs","safeRepository":"bradcstevens/azure-services-test","shortName":"azure-services-test","ownerAvatarUrl":"https://avatars3.githubusercontent.com/u/10226195?v=4","archived":"False","externalId":"260342258","ownerIsAUser":"True","checkoutNestedSubmodules":"false","cleanOptions":"0","fetchDepth":"0","gitLfsSupport":"false","reportBuildStatus":"true","skipSyncSource":"false","labelSourcesFormat":"$(build.buildNumber)","labelSources":"0"},"id":"bradcstevens/azure-services-test","type":"GitHub","name":"bradcstevens/azure-services-test","url":"https://github.com/bradcstevens/azure-services-test.git","defaultBranch":"master","clean":"false","checkoutSubmodules":false},"processParameters":{},"quality":1,"authoredBy":{"displayName":"Brad Stevens","url":"https://spsprodcus3.vssps.visualstudio.com/A78116121-65f3-445a-b2bc-7537ddd1b5d6/_apis/Identities/da602e7e-e44e-6764-a5b9-4ac677890cb6","_links":{"avatar":{"href":"https://dev.azure.com/azure-services/_apis/GraphProfile/MemberAvatars/aad.ZGE2MDJlN2UtZTQ0ZS03NzY0LWE1YjktNGFjNjc3ODkwY2I2"}},"id":"da602e7e-e44e-6764-a5b9-4ac677890cb6","uniqueName":"brad.stevens@cdw.com","imageUrl":"https://dev.azure.com/azure-services/_apis/GraphProfile/MemberAvatars/aad.ZGE2MDJlN2UtZTQ0ZS03NzY0LWE1YjktNGFjNjc3ODkwY2I2","descriptor":"aad.ZGE2MDJlN2UtZTQ0ZS03NzY0LWE1YjktNGFjNjc3ODkwY2I2"},"drafts":[],"queue":{"_links":{"self":{"href":"https://dev.azure.com/azure-services/_apis/build/Queues/27"}},"id":27,"name":"Azure Pipelines","url":"https://dev.azure.com/azure-services/_apis/build/Queues/27","pool":{"id":9,"name":"Azure Pipelines","isHosted":true}},"id":8,"name":"arm-best-practice-validation","url":"https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_apis/build/Definitions/8?revision=59","uri":"vstfs:///Build/Definition/8","path":"\\","type":2,"queueStatus":0,"revision":59,"createdDate":"2020-05-01T16:50:40.287Z","project":{"id":"0a0e989e-6f4e-47c6-823a-15b24e481c5b","name":"azure-services-ci","url":"https://dev.azure.com/azure-services/_apis/projects/0a0e989e-6f4e-47c6-823a-15b24e481c5b","state":1,"revision":27,"visibility":0,"lastUpdateTime":"2020-04-27T19:09:08.193Z"}}
+{
+    "options": [
+        {
+            "enabled": false,
+            "definition": {
+                "id": "5d58cc01-7c75-450c-be18-a388ddb129ec"
+            },
+            "inputs": {
+                "branchFilters": "[\"+refs/heads/*\"]",
+                "additionalFields": "{}"
+            }
+        },
+        {
+            "enabled": false,
+            "definition": {
+                "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+            },
+            "inputs": {
+                "workItemType": "Issue",
+                "assignToRequestor": "true",
+                "additionalFields": "{}"
+            }
+        }
+    ],
+    "triggers": [
+        {
+            "branchFilters": [
+                "+master"
+            ],
+            "forks": {
+                "enabled": true,
+                "allowSecrets": true
+            },
+            "pathFilters": [
+                "-/test/*",
+                "-/1-CONTRIBUTION-GUIDE/*",
+                "-/.github/*"
+            ],
+            "requireCommentsForNonTeamMembersOnly": false,
+            "isCommentRequiredForPullRequest": false,
+            "triggerType": 64
+        },
+        {
+            "branchFilters": [
+                "+master"
+            ],
+            "pathFilters": [],
+            "batchChanges": false,
+            "maxConcurrentBuildsPerBranch": 1,
+            "pollingInterval": 0,
+            "triggerType": 2
+        }
+    ],
+    "variables": {
+        "app.id": {
+            "value": "b50cb267-4fdf-4fd1-86f8-cbbdc85ce3dc"
+        },
+        "app.id.admin": {
+            "value": "b50cb267-4fdf-4fd1-86f8-cbbdc85ce3dc"
+        },
+        "app.secret": {
+            "value": null,
+            "isSecret": true
+        },
+        "app.secret.admin": {
+            "value": null,
+            "isSecret": true
+        },
+        "config.file.uri": {
+            "value": "https://azbotstorage.blob.core.windows.net/gen-artifacts-config/.config.json?st=2019-07-08T15%3A34%3A11Z&se=2029-07-09T15%3A34%3A00Z&sp=rl&sv=2018-03-28&sr=c&sig=2lONV85wm%2FFJ8zK89NoZ3QmkEjNBgqD3IIX9wUiseAI%3D"
+        },
+        "gen.parameters.filename": {
+            "value": "gen.azuredeploy.parameters.json"
+        },
+        "gen.prereq.parameters.filename": {
+            "value": "gen.prereq.parameters.json"
+        },
+        "git.folder": {
+            "value": "$(Agent.BuildDirectory)\\s\\test"
+        },
+        "location": {
+            "value": "westus"
+        },
+        "mainTemplate.deployment.name": {
+            "value": null,
+            "isSecret": true
+        },
+        "prereq.deployment.name": {
+            "value": "prereq-deployment"
+        },
+        "prereq.outputs.filename": {
+            "value": "prereq.outputs.json"
+        },
+        "prereq.resourceGroup.name": {
+            "value": "<this will set by a pipeline task>"
+        },
+        "resourceGroup.name": {
+            "value": "<this will set by a pipeline task>"
+        },
+        "result.best.practice": {
+            "value": "False"
+        },
+        "result.credscan": {
+            "value": ""
+        },
+        "result.deployment": {
+            "value": "False"
+        },
+        "result.deployment.last.test.date.parameter": {
+            "value": ""
+        },
+        "result.deployment.parameter": {
+            "value": "PublicDeployment"
+        },
+        "sample.folder": {
+            "value": "<this will set by a pipeline task>"
+        },
+        "skipComponentGovernanceDetection": {
+            "value": "true"
+        },
+        "subscription.id": {
+            "value": "06c1b208-321f-4f6f-95d2-0a07b3cb7570"
+        },
+        "system.debug": {
+            "value": "false",
+            "allowOverride": true
+        },
+        "tenant.id": {
+            "value": "8f1f3ea1-c038-4ce1-8672-ec583b47f8dd"
+        },
+        "ttk.asset.filename": {
+            "value": "arm-ttk.zip"
+        },
+        "ttk.uri": {
+            "value": "https://github.com/Azure/arm-ttk/archive/master.zip"
+        }
+    },
+    "properties": {},
+    "tags": [],
+    "_links": {
+        "self": {
+            "href": "https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_apis/build/Definitions/8?revision=59"
+        },
+        "web": {
+            "href": "https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_build/definition?definitionId=8"
+        },
+        "editor": {
+            "href": "https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_build/designer?id=8&_a=edit-build-definition"
+        },
+        "badge": {
+            "href": "https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_apis/build/status/8"
+        }
+    },
+    "jobAuthorizationScope": 1,
+    "jobTimeoutInMinutes": 360,
+    "jobCancelTimeoutInMinutes": 15,
+    "badgeEnabled": true,
+    "process": {
+        "phases": [
+            {
+                "steps": [
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Download TTK",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeeded()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "inline",
+                            "filePath": "",
+                            "arguments": "",
+                            "script": "Invoke-WebRequest -uri '$(ttk.uri)' -OutFile \"$(git.folder)/$(ttk.asset.filename)\" -Verbose\nGet-ChildItem '$(git.folder)' -Recurse\n\nWrite-Host \"Expanding files...\"\nExpand-Archive -Path '$(git.folder)/*.zip' -DestinationPath '$(git.folder)' -Verbose\n\nWrite-Host \"Expanded files found:\"\nGet-ChildItem '$(git.folder)' -Recurse",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Connect To Azure (Admin) To Create RGs",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeeded()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)/ci-scripts/ConnectTo-Azure.ps1",
+                            "arguments": "-appId $(app.id.admin) -secret $(app.secret.admin) -tenantId $(tenant.id) -subscriptionId $(subscription.id) -InstallAzModule",
+                            "script": "",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Get Folder for Solution",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeeded()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)\\ci-scripts\\Get-SampleFolder.ps1",
+                            "arguments": "",
+                            "script": "<#\nThis script will find the sample folder for the PR - Test are run on that folder only\nIf the PR contains more than one sample the build must fail\nIf the PR does not contain changes to a sample folder, it will currently fail but we'll TODO this to\npass the build in order to trigger a manual review\n#>\n\nGet-ChildItem env: # debugging\n\n# Get-ChildItem env: # debugging\n\n$GitHubRepository = $ENV:BUILD_REPOSITORY_NAME\n$RepoRoot = $ENV:BUILD_REPOSITORY_LOCALPATH\n\nif ($ENV:BUILD_REASON -eq \"PullRequest\") {\n    $GitHubPRNumber = $ENV:SYSTEM_PULLREQUEST_PULLREQUESTNUMBER\n}\nelseif ($ENV:BUILD_REASON -eq \"BatchedCI\" -or $ENV:BUILD_REASON -eq \"IndividualCI\" -or $ENV:BUILD_REASON -eq \"Manual\") {\n    <#\n        When a CI trigger is running, we get no information in the environment about what changed in the incoming PUSH (i.e. PR# or files changed) except...\n        In the source version message - so even though this fragile, we can extract from there - the expected format is:\n        BUILD_SOURCEVERSIONMESSAGE = \"Merge pull request #9 from bmoore-msft/bmoore-msft-patch-2…\"\n    #>\n    try {\n        $pr = $ENV:BUILD_SOURCEVERSIONMESSAGE # TODO: sometimes AzDO is not setting the message, not clear why...\n        $begin = 0\n        $begin = $pr.IndexOf(\"#\") # look for the #\n    }\n    catch { }\n    if ($begin -ge 0) {\n        $end = $pr.IndexOf(\" \", $begin) # look for the trailing space\n        $GitHubPRNumber = $pr.Substring($begin + 1, $end - $begin - 1)\n    }\n    else {\n        Write-Error \"BuildSourceVersionMessage does not contain PR #: `'$pr`'\"\n    }\n}\nelse {\n    Write-Error \"Unknown Build Reason ($ENV:BUILD_REASON) - cannot get PR number... \"\n}\n\n$PRUri = \"https://api.github.com/repos/$($GitHubRepository)/pulls/$($GitHubPRNumber)/files\"\n\n# Get all of the files changed in the PR\n$ChangedFile = Invoke-Restmethod \"$PRUri\"\n\n# Now check to make sure there is exactly one sample in this PR per repo guidelines\n$FolderArray = @()\n$ChangedFile | ForEach-Object {\n    Write-Output $_.blob_url\n    if ($_.status -ne \"removed\") {\n        # ignore deleted files, for example when a sample folder is renamed\n        $CurrentPath = Split-Path (Join-Path -path $RepoRoot -ChildPath $_.filename)\n \n        # File in root of repo - TODO: should we block this?\n        If ($CurrentPath -eq $RepoRoot) {\n            Write-Error \"### Error ### The file $($_.filename) is in the root of the repository. A PR can only contain changes to files from a sample folder at this time.\"\n        }\n        Else {\n            # find metadata.json\n            while (!(Test-Path (Join-Path -path $CurrentPath -ChildPath \"metadata.json\")) -and $CurrentPath -ne $RepoRoot) {\n                $CurrentPath = Split-Path $CurrentPath # if it's not in the same folder as this file, search it's parent\n            }\n            # if we made it to the root searching for metadata.json write the error\n            If ($CurrentPath -eq $RepoRoot) {\n                Write-Error \"### Error ### The scenario folder for $($_.filename) does not include a metadata.json file. Please add a metadata.json file to your scenario folder as part of the pull request.\"\n            }\n            Else {\n                $FolderArray += $currentpath\n            }\n        }\n    }\n}\n\n# Get the unique paths we found metadata.json in - there should be no more then one\n$FolderArray = @($FolderArray | Select-Object -Unique)\n \nIf ($FolderArray.count -gt 1) {\n    Write-Error \"### Error ### The Pull request contains file changes from $($FolderArray.count) scenario folders. A pull request can only contain changes to files from a single scenario folder.\"\n}\n\n# Update pipeline variable with the sample folder\n$FolderString = $FolderArray[0]\nWrite-Output \"Using sample folder: $FolderString\"\nWrite-Host \"##vso[task.setvariable variable=sample.folder]$FolderString\"\n\n$sampleName = $FolderString.Replace(\"$ENV:BUILD_SOURCESDIRECTORY\\\", \"\")\nWrite-Output \"Using sample name: $sampleName\"\nWrite-Host \"##vso[task.setvariable variable=sample.name]$sampleName\"\n",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": true,
+                        "alwaysRun": true,
+                        "displayName": "Validate README.md",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeededOrFailed()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)\\ci-scripts\\Validate-ReadMe.ps1",
+                            "arguments": "",
+                            "script": "",
+                            "errorActionPreference": "continue",
+                            "failOnStderr": "true",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": true,
+                        "alwaysRun": false,
+                        "displayName": "Run Best Practices Tests",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeeded()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "inline",
+                            "filePath": "",
+                            "arguments": "",
+                            "script": "Import-Module $(git.folder)/arm-ttk-master/arm-ttk/arm-ttk.psd1 -Verbose\n$testOutput = @(Test-AzTemplate -TemplatePath \"$(sample.folder)\")\n$testOutput\n\nif ($testOutput | ? {$_.Errors }) {\n   exit 1 \n} else {\n    Write-Host \"##vso[task.setvariable variable=result.best.practice]$true\"\n    exit 0\n} \n",
+                            "errorActionPreference": "continue",
+                            "failOnStderr": "true",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Generate RG Names and Check for Prereqs",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeeded()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)\\ci-scripts\\Gen-ResourceGroupNames.ps1",
+                            "arguments": "-sampleFolder $(sample.folder)",
+                            "script": "# Write your PowerShell commands here.\n\nWrite-Host \"Hello World\"\n",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": true,
+                        "alwaysRun": false,
+                        "displayName": "Create ResourceGroup - Assign RBAC (mainTemplate RG)",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeeded()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)/ci-scripts/Create-ResourceGroupAssignment.ps1",
+                            "arguments": "-ResourceGroupName \"$(resourceGroup.name)\" -Location $(location) -appId $(app.id)",
+                            "script": "",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": true,
+                        "alwaysRun": false,
+                        "displayName": "Create ResourceGroup - Assign RBAC (prereqs RG) ",
+                        "timeoutInMinutes": 0,
+                        "condition": "and(succeeded(), eq(variables['deploy.prereqs'], 'true'), ne(variables['prereq.resourceGroup.name'], variables['resourceGroup.name']))",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)/ci-scripts/Create-ResourceGroupAssignment.ps1",
+                            "arguments": "-ResourceGroupName \"$(prereq.resourceGroup.name)\" -Location $(location) -appId $(app.id)",
+                            "script": "",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Connect To Azure (non-Admin) To Deploy",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeeded()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)/ci-scripts/ConnectTo-Azure.ps1",
+                            "arguments": "-appId $(app.id) -secret $(app.secret) -tenantId $(tenant.id) -subscriptionId $(subscription.id)",
+                            "script": "",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "GEN Parameters (Prereqs)",
+                        "timeoutInMinutes": 0,
+                        "condition": "and(succeeded(), eq(variables['deploy.prereqs'], 'true'))",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)/ci-scripts/Gen-TemplateParameters.ps1",
+                            "arguments": "-configUri \"$(config.file.uri)\" -TemplateParametersFile \"$(sample.folder)\\prereqs\\prereq.azuredeploy.parameters.json\" -NewTemplateParametersFile \"$(sample.folder)\\prereqs\\$(gen.prereq.parameters.filename)\"",
+                            "script": "",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Deploy Template (prereqs)",
+                        "timeoutInMinutes": 0,
+                        "condition": "and(succeeded(), eq(variables['deploy.prereqs'], 'true'))",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)\\Deploy-AzTemplate.ps1",
+                            "arguments": "-ArtifactStagingDirectory \"$(sample.folder)\\prereqs\" -Location \"$(Location)\" -ResourceGroupName \"$(prereq.resourceGroup.name)\" -TemplateParametersFile \"$(sample.folder)\\prereqs\\$(gen.prereq.parameters.filename)\" -DeploymentName \"$(prereq.deployment.name)\" -TemplateFile \"$(sample.folder)\\prereqs\\prereq.azuredeploy.json\"",
+                            "script": "",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Dump Outputs To File (prereqs)",
+                        "timeoutInMinutes": 0,
+                        "condition": "and(succeeded(), eq(variables['deploy.prereqs'], 'true'))",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "inline",
+                            "filePath": "",
+                            "arguments": "",
+                            "script": "$PreReqOutputs = (Get-AzResourceGroupDeployment -ResourceGroupName \"$(prereq.resourceGroup.name)\" -Name $(prereq.deployment.name)).Outputs | ConvertTo-Json\nWrite-Host \"$PreReqOutputs\"\n\n###Write-Output \"##vso[task.setvariable variable=prereq.config.json]$PreReqOutputs\"\n\n$PreReqOutputs | Out-File -FilePath \"$(sample.folder)\\prereqs\\$(prereq.outputs.filename)\"",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "GEN mainTemplate Params",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeeded()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)/ci-scripts/Gen-TemplateParameters.ps1",
+                            "arguments": "-configUri \"$(config.file.uri)\" -TemplateParametersFile \"$(sample.folder)\\azuredeploy.parameters.json\" -NewTemplateParametersFile \"$(sample.folder)\\$(gen.parameters.filename)\" -prereqOutputsFileName \"$(sample.folder)\\prereqs\\$(prereq.outputs.filename)\"",
+                            "script": "",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Deploy mainTemplate",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeeded()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "inline",
+                            "filePath": "",
+                            "arguments": "",
+                            "script": "$(git.folder)\\ci-scripts\\Deploy-AzTemplate.ps1 `\n    -ArtifactStagingDirectory \"$(sample.folder)\" `\n    -Location \"$(Location)\" `\n    -ResourceGroupName \"$(resourceGroup.name)\" `\n    -TemplateParametersFile \"$(sample.folder)\\$(gen.parameters.filename)\" `\n    -DeploymentName \"$(mainTemplate.deployment.name)\"\n\nWrite-Host \"##vso[task.setvariable variable=result.deployment]$true\"\n\n",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Connect To Azure (Admin) To Clean Up",
+                        "timeoutInMinutes": 0,
+                        "condition": "always()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)/ci-scripts/ConnectTo-Azure.ps1",
+                            "arguments": "-appId $(app.id.admin) -secret $(app.secret.admin) -tenantId $(tenant.id) -subscriptionId $(subscription.id)",
+                            "script": "",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": true,
+                        "alwaysRun": true,
+                        "displayName": "Write Test Result for README.MD",
+                        "timeoutInMinutes": 0,
+                        "condition": "succeededOrFailed()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "filePath",
+                            "filePath": "$(git.folder)\\ci-scripts\\Write-TestResults.ps1",
+                            "arguments": "-$(result.deployment.parameter) $(result.deployment)",
+                            "script": "",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Clean Up ResourceGroup (main)",
+                        "timeoutInMinutes": 0,
+                        "condition": "always()",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "inline",
+                            "filePath": "",
+                            "arguments": "",
+                            "script": "# remove the resource group\nWrite-Host \"First attempt...\"\n& $(git.folder)/ci-scripts/Kill-AzResourceGroup.ps1 -ResourceGroupName \"$(resourceGroup.name)\" -ErrorAction SilentlyContinue\n\n# if the resource group still exists after the first attempt, try again after a few minutes\nWrite-Host \"Checking for ResourceGroup…\"\nif ((Get-AzResourceGroup -Name \"$(resourceGroup.name)\" -verbose -ErrorAction SilentlyContinue) -ne $null) {\n\n    Write-Host \"Found the resource group - sleeping...\" \n    Sleep 600\n    Write-Host \"Attempting Kill-AzResourceGroup…\"\n    & $(git.folder)/ci-scripts/Kill-AzResourceGroup.ps1 -ResourceGroupName \"$(resourceGroup.name)\"\n\n}\n",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    },
+                    {
+                        "environment": {},
+                        "enabled": true,
+                        "continueOnError": false,
+                        "alwaysRun": false,
+                        "displayName": "Clean Up ResourceGroup (prereqs)",
+                        "timeoutInMinutes": 0,
+                        "condition": "and(always(), eq(variables['deploy.prereqs'], 'true'), ne(variables['prereq.resourceGroup.name'], variables['resourceGroup.name']))",
+                        "task": {
+                            "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+                            "versionSpec": "2.*",
+                            "definitionType": "task"
+                        },
+                        "inputs": {
+                            "targetType": "inline",
+                            "filePath": "",
+                            "arguments": "",
+                            "script": "# remove the resource group\nWrite-Host \"First attempt...\"\n& $(git.folder)/ci-scripts/Kill-AzResourceGroup.ps1 -ResourceGroupName \"$(prereq.resourceGroup.name)\" -ErrorAction SilentlyContinue\n\n# if the resource group still exists after the first attempt, try again after a few minutes\nWrite-Host \"Checking for ResourceGroup…\"\nif ((Get-AzResourceGroup -Name \"$(prereq.resourceGroup.name)\" -verbose -ErrorAction SilentlyContinue) -ne $null) {\n\n    Write-Host \"Found the resource group - sleeping...\" \n    Sleep 600\n    Write-Host \"Attempting Kill-AzResourceGroup…\"\n    & $(git.folder)/ci-scripts/Kill-AzResourceGroup.ps1 -ResourceGroupName \"$(prereq.resourceGroup.name)\"\n}\n",
+                            "errorActionPreference": "stop",
+                            "failOnStderr": "false",
+                            "ignoreLASTEXITCODE": "false",
+                            "pwsh": "true",
+                            "workingDirectory": ""
+                        }
+                    }
+                ],
+                "name": "Agent job 1",
+                "refName": "Job_1",
+                "condition": "succeeded()",
+                "target": {
+                    "executionOptions": {
+                        "type": 0
+                    },
+                    "allowScriptsAuthAccessOption": false,
+                    "type": 1
+                },
+                "jobAuthorizationScope": 1,
+                "jobTimeoutInMinutes": 360
+            }
+        ],
+        "target": {
+            "agentSpecification": {
+                "identifier": "windows-2019"
+            }
+        },
+        "type": 1
+    },
+    "repository": {
+        "properties": {
+            "apiUrl": "https://api.github.com/repos/bradcstevens/azure-services-test",
+            "branchesUrl": "https://api.github.com/repos/bradcstevens/azure-services-test/branches",
+            "cloneUrl": "https://github.com/bradcstevens/azure-services-test.git",
+            "connectedServiceId": "3b4db9d3-5724-4e83-91ec-449525c8b897",
+            "defaultBranch": "master",
+            "fullName": "bradcstevens/azure-services-test",
+            "hasAdminPermissions": "True",
+            "isFork": "False",
+            "isPrivate": "False",
+            "lastUpdated": "05/01/2020 03:24:21",
+            "manageUrl": "https://github.com/bradcstevens/azure-services-test",
+            "nodeId": "MDEwOlJlcG9zaXRvcnkyNjAzNDIyNTg=",
+            "ownerId": "10226195",
+            "orgName": "bradcstevens",
+            "refsUrl": "https://api.github.com/repos/bradcstevens/azure-services-test/git/refs",
+            "safeRepository": "bradcstevens/azure-services-test",
+            "shortName": "azure-services-test",
+            "ownerAvatarUrl": "https://avatars3.githubusercontent.com/u/10226195?v=4",
+            "archived": "False",
+            "externalId": "260342258",
+            "ownerIsAUser": "True",
+            "checkoutNestedSubmodules": "false",
+            "cleanOptions": "0",
+            "fetchDepth": "0",
+            "gitLfsSupport": "false",
+            "reportBuildStatus": "true",
+            "skipSyncSource": "false",
+            "labelSourcesFormat": "$(build.buildNumber)",
+            "labelSources": "0"
+        },
+        "id": "bradcstevens/azure-services-test",
+        "type": "GitHub",
+        "name": "bradcstevens/azure-services-test",
+        "url": "https://github.com/bradcstevens/azure-services-test.git",
+        "defaultBranch": "master",
+        "clean": "false",
+        "checkoutSubmodules": false
+    },
+    "processParameters": {},
+    "quality": 1,
+    "authoredBy": {
+        "displayName": "Brad Stevens",
+        "url": "https://spsprodcus3.vssps.visualstudio.com/A78116121-65f3-445a-b2bc-7537ddd1b5d6/_apis/Identities/da602e7e-e44e-6764-a5b9-4ac677890cb6",
+        "_links": {
+            "avatar": {
+                "href": "https://dev.azure.com/azure-services/_apis/GraphProfile/MemberAvatars/aad.ZGE2MDJlN2UtZTQ0ZS03NzY0LWE1YjktNGFjNjc3ODkwY2I2"
+            }
+        },
+        "id": "da602e7e-e44e-6764-a5b9-4ac677890cb6",
+        "uniqueName": "brad.stevens@cdw.com",
+        "imageUrl": "https://dev.azure.com/azure-services/_apis/GraphProfile/MemberAvatars/aad.ZGE2MDJlN2UtZTQ0ZS03NzY0LWE1YjktNGFjNjc3ODkwY2I2",
+        "descriptor": "aad.ZGE2MDJlN2UtZTQ0ZS03NzY0LWE1YjktNGFjNjc3ODkwY2I2"
+    },
+    "drafts": [],
+    "queue": {
+        "_links": {
+            "self": {
+                "href": "https://dev.azure.com/azure-services/_apis/build/Queues/27"
+            }
+        },
+        "id": 27,
+        "name": "Azure Pipelines",
+        "url": "https://dev.azure.com/azure-services/_apis/build/Queues/27",
+        "pool": {
+            "id": 9,
+            "name": "Azure Pipelines",
+            "isHosted": true
+        }
+    },
+    "id": 8,
+    "name": "arm-best-practice-validation",
+    "url": "https://dev.azure.com/azure-services/0a0e989e-6f4e-47c6-823a-15b24e481c5b/_apis/build/Definitions/8?revision=59",
+    "uri": "vstfs:///Build/Definition/8",
+    "path": "\\",
+    "type": 2,
+    "queueStatus": 0,
+    "revision": 59,
+    "createdDate": "2020-05-01T16:50:40.287Z",
+    "project": {
+        "id": "0a0e989e-6f4e-47c6-823a-15b24e481c5b",
+        "name": "azure-services-ci",
+        "url": "https://dev.azure.com/azure-services/_apis/projects/0a0e989e-6f4e-47c6-823a-15b24e481c5b",
+        "state": 1,
+        "revision": 27,
+        "visibility": 0,
+        "lastUpdateTime": "2020-04-27T19:09:08.193Z"
+    }
+}
