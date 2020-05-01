@@ -2,6 +2,7 @@
 
 This template deploys a basic Azure Blob solution.
 
+
 <h2 class="small"><b>Overview and deployed resources</b></h2>
 
 Azure Blob is a cloud-based storage solution which allows organizations to place unstructured data on a managed, higly durable, and highly resilient storage platform within the Azure cloud. Azure Blob storage provides routes for organizations to store data at varying price points depending on their specific needs, ranging from local region redundancy (read: a single data center) to multiple regions and availability zones at once (GZRS), with Standard (Hot and Cool possible with v2 Storage Accounts) and Premium performance levels available.
