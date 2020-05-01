@@ -1,1 +1,0 @@
-Update-AzADUser -UserPrincipalName John.bull@cdw.com -DisplayName "John Bully"

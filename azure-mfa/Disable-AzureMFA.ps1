@@ -1,1 +1,0 @@
-Set-MsolUser -UserPrincipalName testuser@cdw.com -StrongAuthenticationRequirements @()

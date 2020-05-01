@@ -1,1 +1,0 @@
-Remove-AzResourceGroup -Name "msp-data-platform-azure-redis-cache-teff-woodside"
