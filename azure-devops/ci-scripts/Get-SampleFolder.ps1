@@ -55,17 +55,7 @@ $ChangedFile | ForEach-Object {
             Write-Error "### Error ### The file $($_.filename) is in the root of the repository. A PR can only contain changes to files from a sample folder at this time."
         }
         Else {
-            # find metadata.json
-            while (!(Test-Path (Join-Path -path $CurrentPath -ChildPath "metadata.json")) -and $CurrentPath -ne $RepoRoot) {
-                $CurrentPath = Split-Path $CurrentPath # if it's not in the same folder as this file, search it's parent
-            }
-            # if we made it to the root searching for metadata.json write the error
-            If ($CurrentPath -eq $RepoRoot) {
-                Write-Error "### Error ### The scenario folder for $($_.filename) does not include a metadata.json file. Please add a metadata.json file to your scenario folder as part of the pull request."
-            }
-            Else {
-                $FolderArray += $currentpath
-            }
+            $FolderArray += $currentpath
         }
     }
 }
